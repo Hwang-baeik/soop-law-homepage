@@ -3,8 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
-import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const office = {
   name: "숲 법무사 사무소",
@@ -55,24 +55,11 @@ const process = [
 
 function LogoMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-4 text-emerald-950">
-      <div className="font-serif text-4xl font-bold leading-none tracking-[-0.08em] md:text-5xl">
-        숲
-      </div>
-      {!compact && (
-        <>
-          <div className="h-10 w-px bg-emerald-950/50" />
-          <div>
-            <div className="font-serif text-xl font-semibold tracking-[0.08em] md:text-2xl">
-              숲 법무사사무소
-            </div>
-            <div className="mt-1 text-[11px] font-medium tracking-[0.28em] text-stone-500">
-              SOOP JUDICIAL SCRIVENER OFFICE
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+    <img
+      src={compact ? "/soop-logo-mark.png" : "/soop-logo-horizontal.png"}
+      alt="숲 법무사사무소 로고"
+      className={compact ? "h-12 w-auto" : "h-12 w-auto md:h-14"}
+    />
   );
 }
 
