@@ -211,14 +211,11 @@ export default function SoopLawOfficeHomepage() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-stone-100 shadow-sm">
-              <iframe
-                src="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
-                width="100%"
-                height="480"
-                style={{ border: 0 }}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
+            <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
+              <img
+                src="/soop-office-map.png"
+                alt="숲 법무사 사무소 위치 지도"
+                className="h-auto w-full object-cover"
               />
             </div>
 
