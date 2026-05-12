@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,13 +53,152 @@ const process = [
   "접수·보정 대응·완료 보고",
 ];
 
+const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니다)는 개인정보 보호법 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+
+제1조 (개인정보의 처리목적)
+사무소는 상담 신청 접수, 의뢰 내용 확인, 상담 일정 조율, 사건 검토 및 고충 처리를 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 위 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보보호법 등 관계 법령에 따라 필요한 조치를 이행합니다.
+
+제2조 (처리하는 개인정보 항목)
+사무소는 상담 신청 과정에서 회사명, 담당자명, 직무, 직급·직책, 회사 이메일, 전화번호, 요청내용, 직원 수, 업종, 매출액 등 상담에 필요한 정보를 처리할 수 있습니다.
+
+제3조 (개인정보의 처리 및 보유기간)
+상담 신청을 통해 수집된 개인정보는 상담 및 사건 검토 목적 달성 시까지 보유·이용하며, 관계 법령에 따라 보존할 필요가 있는 경우에는 해당 법령에서 정한 기간 동안 보관합니다.
+
+제4조 (개인정보의 제3자 제공)
+사무소는 정보주체의 동의가 있거나 법률에 특별한 규정이 있는 경우를 제외하고 개인정보를 제3자에게 제공하지 않습니다.
+
+제5조 (정보주체의 권리)
+정보주체는 사무소에 대해 개인정보 열람, 정정, 삭제, 처리정지를 요구할 수 있으며, 사무소는 관계 법령에 따라 지체 없이 조치합니다.
+
+제6조 (개인정보 보호책임자)
+개인정보 보호 및 관련 문의는 숲 법무사 사무소로 연락하실 수 있습니다.
+동의서 시행 기준일 : 문의 내용 전송일
+전화: 02-6956-8683
+이메일: soop_lawoffice@naver.com`;
+
 function LogoMark({ compact = false }: { compact?: boolean }) {
   return (
     <img
       src={compact ? "/soop-logo-mark.png" : "/soop-logo-horizontal.png"}
       alt="숲 법무사사무소 로고"
-      className={compact ? "h-12 w-auto" : "h-12 w-auto md:h-14"}
+      className={compact ? "h-12 w-auto" : "h-10 w-auto sm:h-12 md:h-14"}
     />
+  );
+}
+
+function ConsultationForm() {
+  const [form, setForm] = useState({
+    email: "",
+    nameOrCompany: "",
+    category: "",
+    message: "",
+    agree: false,
+  });
+
+  const updateField = (key: keyof typeof form, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!form.agree) {
+      alert("개인정보 수집 및 이용에 동의해 주세요.");
+      return;
+    }
+
+    const subject = encodeURIComponent(
+      `[홈페이지문의]_${form.nameOrCompany}_${form.category}`
+    );
+
+    const body = encodeURIComponent(
+      `메일주소: ${form.email}\n성명(법인명): ${form.nameOrCompany}\n업무 분류: ${form.category}\n\n문의 내용:\n${form.message}`
+    );
+
+    window.location.href = `mailto:${office.email}?subject=${subject}&body=${body}`;
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mt-10 grid gap-5 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm md:p-8"
+    >
+      <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        메일주소 <span className="text-red-600">*</span>
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(e) => updateField("email", e.target.value)}
+          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
+          placeholder="example@domain.com"
+        />
+      </label>
+
+      <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        성명(법인명) <span className="text-red-600">*</span>
+        <input
+          required
+          value={form.nameOrCompany}
+          onChange={(e) => updateField("nameOrCompany", e.target.value)}
+          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
+          placeholder="성명 또는 법인명을 입력해 주세요"
+        />
+      </label>
+
+      <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        업무 분류 <span className="text-red-600">*</span>
+        <select
+          required
+          value={form.category}
+          onChange={(e) => updateField("category", e.target.value)}
+          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
+        >
+          <option value="">선택</option>
+          <option>법인등기</option>
+          <option>부동산등기</option>
+          <option>법원 서류</option>
+          <option>고소장</option>
+          <option>기타</option>
+        </select>
+      </label>
+
+      <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        문의 내용 <span className="text-red-600">*</span>
+        <textarea
+          required
+          value={form.message}
+          onChange={(e) => updateField("message", e.target.value)}
+          rows={8}
+          className="rounded-xl border border-stone-300 px-4 py-3 outline-none focus:border-emerald-800"
+          placeholder="문의하실 내용을 입력해 주세요"
+        />
+      </label>
+
+      <div className="max-h-48 overflow-y-auto rounded-2xl bg-stone-50 p-5 text-sm leading-7 text-stone-700">
+        {privacyPolicy.split("\n").map((line, index) => (
+          <p key={index} className={line.startsWith("제") ? "mt-4 font-bold" : ""}>
+            {line || "\u00A0"}
+          </p>
+        ))}
+      </div>
+
+      <label className="flex items-center justify-center gap-2 text-sm text-stone-700">
+        <input
+          type="checkbox"
+          checked={form.agree}
+          onChange={(e) => updateField("agree", e.target.checked)}
+        />
+        개인정보 수집 및 이용에 동의합니다.
+      </label>
+
+      <button
+        type="submit"
+        className="h-12 rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950"
+      >
+        상담 제출
+      </button>
+    </form>
   );
 }
 
@@ -102,9 +241,12 @@ export default function SoopLawOfficeHomepage() {
                 의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Button className="h-12 rounded-full bg-emerald-900 px-7 text-base hover:bg-emerald-950">
+                <a
+                  href="tel:02-6956-8683"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950"
+                >
                   전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                </a>
                 <Button variant="outline" className="h-12 rounded-full border-stone-300 px-7 text-base">
                   업무분야 보기
                 </Button>
@@ -264,6 +406,19 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
+        <section id="consultation" className="bg-stone-50 py-20">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="max-w-2xl">
+              <p className="font-semibold text-emerald-900">Consultation</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">상담 신청</h2>
+              <p className="mt-4 leading-7 text-stone-600">
+                아래 내용을 작성하면 입력하신 내용이 이메일 형식으로 정리되어 사무소 메일로 발송됩니다.
+              </p>
+            </div>
+            <ConsultationForm />
+          </div>
+        </section>
+
         <section id="contact" className="bg-emerald-950 py-20 text-white">
           <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1fr_0.9fr]">
             <div>
@@ -292,9 +447,12 @@ export default function SoopLawOfficeHomepage() {
                   </div>
                 </div>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  <Button className="h-12 rounded-full bg-emerald-900 text-base hover:bg-emerald-950">
+                  <a
+                    href="tel:02-6956-8683"
+                    className="flex h-12 items-center justify-center rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950"
+                  >
                     전화 상담
-                  </Button>
+                  </a>
                   <a href={office.kakao} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-full border border-stone-300 text-base font-semibold text-stone-800 transition hover:bg-stone-50">
                     카카오톡 상담
                   </a>
