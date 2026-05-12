@@ -213,7 +213,7 @@ export default function SoopLawOfficeHomepage() {
 
             <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
             <img
-              src="/soop-office-map.png"
+              src="/soop-office-map.PNG"
               alt="숲 법무사 사무소 위치 지도"
               className="h-auto w-1/4 rounded-2xl border border-stone-200 object-contain shadow-sm"
             />
