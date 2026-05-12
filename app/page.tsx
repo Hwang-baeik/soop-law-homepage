@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 
 const office = {
   name: "숲 법무사 사무소",
@@ -72,7 +72,6 @@ const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니�
 
 제6조 (개인정보 보호책임자)
 개인정보 보호 및 관련 문의는 숲 법무사 사무소로 연락하실 수 있습니다.
-동의서 시행 기준일 : 문의 내용 전송일
 전화: 02-6956-8683
 이메일: soop_lawoffice@naver.com`;
 
@@ -94,28 +93,50 @@ function ConsultationForm() {
     message: "",
     agree: false,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
 
   const updateField = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.agree) {
-      alert("개인정보 수집 및 이용에 동의해 주세요.");
+      setSubmitMessage("개인정보 수집 및 이용에 동의해 주세요.");
       return;
     }
 
-    const subject = encodeURIComponent(
-      `[홈페이지문의]_${form.nameOrCompany}_${form.category}`
-    );
+    try {
+      setIsSubmitting(true);
+      setSubmitMessage("");
 
-    const body = encodeURIComponent(
-      `메일주소: ${form.email}\n성명(법인명): ${form.nameOrCompany}\n업무 분류: ${form.category}\n\n문의 내용:\n${form.message}`
-    );
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
-    window.location.href = `mailto:${office.email}?subject=${subject}&body=${body}`;
+      if (!response.ok) {
+        throw new Error("상담 신청 전송에 실패했습니다.");
+      }
+
+      setSubmitMessage("상담 신청이 정상적으로 접수되었습니다.");
+      setForm({
+        email: "",
+        nameOrCompany: "",
+        category: "",
+        message: "",
+        agree: false,
+      });
+    } catch {
+      setSubmitMessage("전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -194,10 +215,15 @@ function ConsultationForm() {
 
       <button
         type="submit"
-        className="h-12 rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950"
+        disabled={!form.agree || isSubmitting}
+        className="h-12 rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
       >
-        상담 제출
+        {isSubmitting ? "전송 중..." : "상담 제출"}
       </button>
+
+      {submitMessage && (
+        <p className="text-center text-sm font-medium text-stone-700">{submitMessage}</p>
+      )}
     </form>
   );
 }
