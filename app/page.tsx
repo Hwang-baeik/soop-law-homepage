@@ -3,6 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
 
 const office = {
   name: "숲 법무사 사무소",
@@ -51,24 +53,44 @@ const process = [
   "접수·보정 대응·완료 보고",
 ];
 
+function LogoMark({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="flex items-center gap-4 text-emerald-950">
+      <div className="font-serif text-4xl font-bold leading-none tracking-[-0.08em] md:text-5xl">
+        숲
+      </div>
+      {!compact && (
+        <>
+          <div className="h-10 w-px bg-emerald-950/50" />
+          <div>
+            <div className="font-serif text-xl font-semibold tracking-[0.08em] md:text-2xl">
+              숲 법무사사무소
+            </div>
+            <div className="mt-1 text-[11px] font-medium tracking-[0.28em] text-stone-500">
+              SOOP JUDICIAL SCRIVENER OFFICE
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function SoopLawOfficeHomepage() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
       <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <div className="text-lg font-bold tracking-tight">{office.name}</div>
-            <div className="text-xs text-stone-500">SOOP Judicial Scrivener Office</div>
-          </div>
+          <LogoMark />
           <nav className="hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex">
             <a href="#services" className="hover:text-stone-950">업무분야</a>
             <a href="#strength" className="hover:text-stone-950">강점</a>
             <a href="#process" className="hover:text-stone-950">진행절차</a>
             <a href="#contact" className="hover:text-stone-950">상담안내</a>
           </nav>
-          <button type="button" className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-950">
+          <Button className="rounded-full bg-emerald-900 px-5 hover:bg-emerald-950">
             상담 문의
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -77,6 +99,9 @@ export default function SoopLawOfficeHomepage() {
           <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-emerald-100 blur-3xl" />
           <div className="mx-auto grid max-w-7xl gap-12 px-6 py-24 md:grid-cols-[1.05fr_0.95fr] md:py-32">
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white/80 px-6 py-5 shadow-sm">
+                <LogoMark />
+              </div>
               <div className="mb-5 inline-flex rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900">
                 성동구·성수동 법인등기 및 부동산등기 실무 사무소
               </div>
@@ -90,18 +115,18 @@ export default function SoopLawOfficeHomepage() {
                 의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <button type="button" className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950">
+                <Button className="h-12 rounded-full bg-emerald-900 px-7 text-base hover:bg-emerald-950">
                   전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
-                <button type="button" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 bg-white px-7 text-base font-semibold text-stone-900 transition hover:bg-stone-50">
+                </Button>
+                <Button variant="outline" className="h-12 rounded-full border-stone-300 px-7 text-base">
                   업무분야 보기
-                </button>
+                </Button>
               </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              <div className="rounded-[2rem] border border-stone-200 bg-white/90 shadow-xl">
-                <div className="p-8">
+              <Card className="rounded-[2rem] border-stone-200 bg-white/90 shadow-xl">
+                <CardContent className="p-8">
                   <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white">
                     <ShieldCheck className="h-7 w-7" />
                   </div>
@@ -118,8 +143,8 @@ export default function SoopLawOfficeHomepage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </motion.div>
           </div>
         </section>
@@ -134,15 +159,15 @@ export default function SoopLawOfficeHomepage() {
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {services.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-                <div className="p-6">
+              <Card key={title} className="rounded-3xl border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                <CardContent className="p-6">
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-900">
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="text-xl font-bold">{title}</h3>
                   <p className="mt-3 text-sm leading-7 text-stone-600">{desc}</p>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
@@ -198,8 +223,8 @@ export default function SoopLawOfficeHomepage() {
                 상담 전 사건의 종류, 당사자 정보, 현재 진행 단계, 보유 서류를 알려주시면 보다 정확한 안내가 가능합니다.
               </p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white text-stone-900 shadow-xl">
-              <div className="p-7">
+            <Card className="rounded-3xl border-white/10 bg-white text-stone-900 shadow-xl">
+              <CardContent className="p-7">
                 <h3 className="text-2xl font-bold">{office.name}</h3>
                 <p className="mt-2 text-stone-600">{office.partners}</p>
                 <div className="mt-6 space-y-4 text-sm">
@@ -217,25 +242,15 @@ export default function SoopLawOfficeHomepage() {
                   </div>
                 </div>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  <a
-                    href="tel:02-6956-8683"
-                    className="flex h-12 items-center justify-center rounded-full bg-emerald-900 px-6 text-base font-semibold text-white transition hover:bg-emerald-950"
-                  >
+                  <Button className="h-12 rounded-full bg-emerald-900 text-base hover:bg-emerald-950">
                     전화 상담
-                  </a>
+                  </Button>
                   <a href={office.kakao} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-full border border-stone-300 text-base font-semibold text-stone-800 transition hover:bg-stone-50">
                     카카오톡 상담
                   </a>
-
-                  <a
-                    href="mailto:soop_lawoffice@naver.com"
-                    className="flex h-12 items-center justify-center rounded-full border border-stone-300 px-6 text-base font-semibold text-stone-800 transition hover:bg-stone-50"
-                  >
-                    이메일 문의
-                  </a>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
       </main>
@@ -244,8 +259,10 @@ export default function SoopLawOfficeHomepage() {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div>
-              <div className="text-lg font-bold text-white">{office.name}</div>
-              <p className="mt-2 text-sm text-stone-400">정확한 절차 검토와 신뢰 있는 등기·서류 업무</p>
+              <div className="inline-flex rounded-2xl bg-white px-5 py-4">
+                <LogoMark />
+              </div>
+              <p className="mt-4 text-sm text-stone-400">정확한 절차 검토와 신뢰 있는 등기·서류 업무</p>
             </div>
             <div className="grid gap-2 text-sm leading-6 md:text-right">
               <div>대표 법무사: 황배익 · 김지안</div>
