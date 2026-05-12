@@ -201,6 +201,49 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
+        <section className="border-y border-stone-200 bg-white py-20">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="mb-10 max-w-2xl">
+              <p className="font-semibold text-emerald-900">Location</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">오시는 길</h2>
+              <p className="mt-4 leading-7 text-stone-600">
+                서울 성동구 연무장5가길 25, 315호 숲 법무사 사무소
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-stone-100 shadow-sm">
+              <iframe
+                src="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
+                width="100%"
+                height="480"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-4">
+              <a
+                href="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-950"
+              >
+                네이버 지도에서 보기
+              </a>
+
+              <a
+                href="https://map.kakao.com/link/search/서울 성동구 연무장5가길 25"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
+              >
+                카카오맵에서 보기
+              </a>
+            </div>
+          </div>
+        </section>
+
         <section id="contact" className="bg-emerald-950 py-20 text-white">
           <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1fr_0.9fr]">
             <div>
