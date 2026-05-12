@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type ContactFormData = {
   email?: string;
@@ -26,6 +27,17 @@ function escapeHtml(value: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { message: "RESEND_API_KEY 환경변수가 설정되지 않았습니다." },
+        { status: 500 }
+      );
+    }
+
+    const resend = new Resend(apiKey);
+
     const body = (await request.json()) as ContactFormData;
 
     const email = body.email?.trim() ?? "";
@@ -60,31 +72,13 @@ export async function POST(request: NextRequest) {
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.7; color: #222;">
         <h2>홈페이지 상담 문의</h2>
-        <table style="border-collapse: collapse; width: 100%; max-width: 720px;">
-          <tbody>
-            <tr>
-              <th style="border: 1px solid #ddd; padding: 10px; background: #f7f7f7; text-align: left;">메일주소</th>
-              <td style="border: 1px solid #ddd; padding: 10px;">${escapeHtml(email)}</td>
-            </tr>
-            <tr>
-              <th style="border: 1px solid #ddd; padding: 10px; background: #f7f7f7; text-align: left;">성명(법인명)</th>
-              <td style="border: 1px solid #ddd; padding: 10px;">${escapeHtml(nameOrCompany)}</td>
-            </tr>
-            <tr>
-              <th style="border: 1px solid #ddd; padding: 10px; background: #f7f7f7; text-align: left;">업무 분류</th>
-              <td style="border: 1px solid #ddd; padding: 10px;">${escapeHtml(category)}</td>
-            </tr>
-            <tr>
-              <th style="border: 1px solid #ddd; padding: 10px; background: #f7f7f7; text-align: left;">개인정보 동의</th>
-              <td style="border: 1px solid #ddd; padding: 10px;">동의함</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3 style="margin-top: 24px;">문의 내용</h3>
-        <div style="white-space: pre-wrap; border: 1px solid #ddd; padding: 14px; max-width: 720px; background: #fafafa;">
-${escapeHtml(message)}
-        </div>
+        <p><strong>메일주소:</strong> ${escapeHtml(email)}</p>
+        <p><strong>성명(법인명):</strong> ${escapeHtml(nameOrCompany)}</p>
+        <p><strong>업무 분류:</strong> ${escapeHtml(category)}</p>
+        <p><strong>개인정보 동의:</strong> 동의함</p>
+        <hr />
+        <h3>문의 내용</h3>
+        <div style="white-space: pre-wrap;">${escapeHtml(message)}</div>
       </div>
     `;
 
@@ -100,8 +94,8 @@ ${escapeHtml(message)}
 ${message}
     `.trim();
 
-    const { data, error } = await resend.emails.send({
-      from: "숲 법무사 사무소 <sooplaw@sooplaw.com>",
+    const { error } = await resend.emails.send({
+      from: "숲 법무사 사무소 <onboarding@resend.dev>",
       to: ["soop_lawoffice@naver.com"],
       replyTo: email,
       subject,
@@ -118,7 +112,7 @@ ${message}
     }
 
     return NextResponse.json(
-      { message: "상담 신청이 정상적으로 접수되었습니다.", data },
+      { message: "상담 신청이 정상적으로 접수되었습니다." },
       { status: 200 }
     );
   } catch (error) {
