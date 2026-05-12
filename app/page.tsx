@@ -211,32 +211,55 @@ export default function SoopLawOfficeHomepage() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-sm">
-            <img
-              src="/soop-office-map.PNG"
-              alt="숲 법무사 사무소 위치 지도"
-              className="h-auto w-1/4 rounded-2xl border border-stone-200 object-contain shadow-sm"
-            />
-            </div>
+            <div className="grid items-center gap-8 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:grid-cols-[1fr_2fr]">
+              <div className="overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 shadow-sm">
+                <img
+                  src="/soop-office-map.PNG"
+                  alt="숲 법무사 사무소 위치 지도"
+                  className="h-auto w-full object-contain"
+                />
+              </div>
 
-            <div className="mt-6 flex flex-wrap gap-4">
-              <a
-                href="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-950"
-              >
-                네이버 지도에서 보기
-              </a>
+              <div className="flex flex-col justify-center gap-4 md:pl-4">
+                <div>
+                  <h3 className="text-xl font-bold text-stone-900">숲 법무사 사무소 위치</h3>
+                  <p className="mt-2 text-sm leading-7 text-stone-600">
+                    성수역 인근, 서울 성동구 연무장5가길 25, 315호에 위치하고 있습니다.
+                  </p>
+                </div>
 
-              <a
-                href="https://map.kakao.com/link/search/서울 성동구 연무장5가길 25"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
-              >
-                카카오맵에서 보기
-              </a>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-950"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-emerald-900">N</span>
+                    네이버지도에서 보기
+                  </a>
+
+                  <a
+                    href="https://map.kakao.com/link/search/서울 성동구 연무장5가길 25"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-yellow-300 px-5 py-3 text-sm font-semibold text-stone-900 transition hover:bg-yellow-400"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-black text-yellow-300">K</span>
+                    카카오맵에서 보기
+                  </a>
+
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=서울%20성동구%20연무장5가길%2025"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-stone-300 bg-white text-xs font-black text-stone-700">G</span>
+                    구글맵에서 보기
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </section>
