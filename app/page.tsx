@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
