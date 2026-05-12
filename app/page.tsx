@@ -217,11 +217,21 @@ export default function SoopLawOfficeHomepage() {
                   </div>
                 </div>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  <button type="button" className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950">
+                  <a
+                    href="tel:02-6956-8683"
+                    className="flex h-12 items-center justify-center rounded-full bg-emerald-900 px-6 text-base font-semibold text-white transition hover:bg-emerald-950"
+                  >
                     전화 상담
-                  </button>
+                  </a>
                   <a href={office.kakao} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-full border border-stone-300 text-base font-semibold text-stone-800 transition hover:bg-stone-50">
                     카카오톡 상담
+                  </a>
+
+                  <a
+                    href="mailto:soop_lawoffice@naver.com"
+                    className="flex h-12 items-center justify-center rounded-full border border-stone-300 px-6 text-base font-semibold text-stone-800 transition hover:bg-stone-50"
+                  >
+                    이메일 문의
                   </a>
                 </div>
               </div>
