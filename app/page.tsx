@@ -1,524 +1,397 @@
-"use client";
+const navItems = [
+  { label: "사무소 소개", href: "/about" },
+  { label: "법인등기 절차", href: "/corporate-registration" },
+  { label: "민사서류 절차", href: "/civil-documents" },
+  { label: "민사집행 절차", href: "/civil-execution" },
+  { label: "실무사례", href: "/cases" },
+  { label: "자주묻는질문", href: "/faq" },
+  { label: "실무 자료실", href: "/resources" },
+];
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
-import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-
-const office = {
-  name: "숲 법무사 사무소",
-  partners: "법무사 황배익 · 법무사 김지안",
-  address: "서울 성동구 연무장5가길 25, 315호",
-  phone: "02-6956-8683",
-  email: "soop_lawoffice@naver.com",
-  kakao: "https://pf.kakao.com/_cZxddX",
-  businessNumber: "478-02-02146",
-};
-
-const services = [
+const practiceAreas = [
   {
-    icon: Building2,
-    title: "법인등기",
-    desc: "설립, 임원변경, 본점이전, 증자·감자, 정관변경, 종류주식 등 법인 절차를 정확하게 검토합니다.",
+    title: "법인등기 절차",
+    href: "/corporate-registration",
+    summary:
+      "설립, 임원변경, 본점이전, 증자·감자, 정관변경 등 회사 변경사항을 등기절차에 맞추어 검토합니다.",
+    tags: ["설립등기", "임원변경", "본점이전", "증자·감자"],
   },
   {
-    icon: Home,
-    title: "부동산등기",
-    desc: "소유권이전, 근저당권, 상속·증여, 말소, 가등기 등 권리관계에 맞는 등기 절차를 진행합니다.",
+    title: "민사서류 절차",
+    href: "/civil-documents",
+    summary:
+      "지급명령, 내용증명, 합의서, 준비서면 등 사실관계와 증거관계를 바탕으로 문서를 구성합니다.",
+    tags: ["지급명령", "내용증명", "청구원인", "증거정리"],
   },
   {
-    icon: FileText,
-    title: "상속·가족관계 절차",
-    desc: "상속등기, 상속포기, 한정승인, 가족관계 서류 검토 등 사안별 위험요소를 함께 점검합니다.",
-  },
-  {
-    icon: Scale,
-    title: "민사 신청·서류 작성",
-    desc: "지급명령, 내용증명, 제소전화해, 각종 신청서 작성 등 실무형 문서 업무를 지원합니다.",
+    title: "민사집행 절차",
+    href: "/civil-execution",
+    summary:
+      "채권압류, 강제집행, 명도, 보전처분 등 권리실현을 위한 절차를 단계별로 검토합니다.",
+    tags: ["채권압류", "강제집행", "명도", "보전처분"],
   },
 ];
 
-const strengths = [
-  "절차별 체크리스트 기반 검토",
-  "법인·부동산 등기 실무 중심 대응",
-  "성동구·성수동 지역 접근성",
-  "필요서류, 세금, 일정까지 한 번에 정리",
+const recentPosts = [
+  {
+    category: "법인등기",
+    title: "주식회사 설립등기 절차와 준비서류",
+    summary:
+      "발기설립을 기준으로 정관, 주식인수, 임원 선임, 본점, 목적 기재사항을 정리합니다.",
+    href: "/resources/incorporation-checklist",
+  },
+  {
+    category: "법인등기",
+    title: "대표이사 변경등기 기한과 과태료 검토",
+    summary:
+      "취임, 중임, 사임, 해임 등 사유별 등기기간과 실무상 확인사항을 정리합니다.",
+    href: "/resources/director-change-period",
+  },
+  {
+    category: "민사서류",
+    title: "지급명령 신청 전 확인해야 할 자료",
+    summary:
+      "계약서, 세금계산서, 입금내역, 문자·카카오톡 대화 등 기본 증거자료를 확인합니다.",
+    href: "/resources/payment-order-evidence",
+  },
 ];
 
-const process = [
-  "상담 및 사실관계 확인",
-  "필요서류·비용·일정 안내",
-  "서류 작성 및 사전 검토",
-  "접수·보정 대응·완료 보고",
+const faqs = [
+  {
+    question: "대표이사 변경등기는 언제까지 해야 하나요?",
+    answer:
+      "변경 사유가 발생한 날부터 원칙적으로 2주 이내 등기신청 여부를 검토해야 합니다.",
+  },
+  {
+    question: "법인설립 상담 전에 어떤 자료를 준비해야 하나요?",
+    answer:
+      "상호, 본점 주소, 목적, 자본금, 임원 구성, 주주 구성, 사업자등록 예정 내용을 미리 정리하면 절차가 빠릅니다.",
+  },
+  {
+    question: "지급명령 이후 이의신청이 들어오면 어떻게 되나요?",
+    answer:
+      "상대방이 적법하게 이의신청을 하면 통상 소송절차로 이행되므로, 청구원인과 증거 정리가 중요합니다.",
+  },
 ];
 
-const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니다)는 개인정보 보호법 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+const privacyPolicy = `개인정보 수집 및 이용 안내
 
-제1조 (개인정보의 처리목적)
-사무소는 상담 신청 접수, 의뢰 내용 확인, 상담 일정 조율, 사건 검토 및 고충 처리를 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 위 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보보호법 등 관계 법령에 따라 필요한 조치를 이행합니다.
+숲 법무사 사무소는 상담 신청 접수, 의뢰 내용 확인, 상담 일정 조율 및 사건 검토를 위하여 개인정보를 수집·이용합니다.
 
-제2조 (처리하는 개인정보 항목)
-사무소는 상담 신청 과정에서 회사명, 담당자명, 직무, 직급·직책, 회사 이메일, 전화번호, 요청내용, 직원 수, 업종, 매출액 등 상담에 필요한 정보를 처리할 수 있습니다.
+제1조 수집 항목
+성명, 회사명, 연락처, 이메일, 상담 요청 내용, 사건 관련 기본자료를 수집할 수 있습니다.
 
-제3조 (개인정보의 처리 및 보유기간)
-상담 신청을 통해 수집된 개인정보는 상담 및 사건 검토 목적 달성 시까지 보유·이용하며, 관계 법령에 따라 보존할 필요가 있는 경우에는 해당 법령에서 정한 기간 동안 보관합니다.
+제2조 이용 목적
+상담 신청 확인, 사건 검토, 상담 일정 조율, 의뢰인 응대 및 업무 수행 가능성 검토를 위하여 이용합니다.
 
-제4조 (개인정보의 제3자 제공)
-사무소는 정보주체의 동의가 있거나 법률에 특별한 규정이 있는 경우를 제외하고 개인정보를 제3자에게 제공하지 않습니다.
+제3조 보유 기간
+수집된 개인정보는 상담 및 사건 검토 목적 달성 후 관련 법령 또는 내부 기준에 따라 필요한 기간 동안 보관 후 파기합니다.
 
-제5조 (정보주체의 권리)
-정보주체는 사무소에 대해 개인정보 열람, 정정, 삭제, 처리정지를 요구할 수 있으며, 사무소는 관계 법령에 따라 지체 없이 조치합니다.
+제4조 동의 거부 권리
+정보주체는 개인정보 수집 및 이용에 대한 동의를 거부할 수 있습니다. 다만 동의하지 않을 경우 상담 신청 및 사건 검토가 제한될 수 있습니다.`;
 
-제6조 (개인정보 보호책임자)
-개인정보 보호 및 관련 문의는 숲 법무사 사무소로 연락하실 수 있습니다.
-전화: 02-6956-8683
-이메일: soop_lawoffice@naver.com`;
-
-function LogoMark({ compact = false }: { compact?: boolean }) {
+export default function HomePage() {
   return (
-    <img
-      src={compact ? "/soop-logo-mark.png" : "/soop-logo-horizontal.png"}
-      alt="숲 법무사사무소 로고"
-      className={compact ? "h-12 w-auto" : "h-10 w-auto sm:h-12 md:h-14"}
-    />
-  );
-}
+    <main className="min-h-screen bg-[#f7f8f5] text-[#1f2a24]">
+      <header className="sticky top-0 z-50 border-b border-[#d9ded5] bg-[#f7f8f5]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+          <a href="/" className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#163326] text-xl font-bold text-white">
+              숲
+            </div>
+            <div>
+              <p className="text-lg font-semibold tracking-tight">
+                숲 법무사 사무소
+              </p>
+              <p className="text-xs text-[#6d776f]">
+                법인등기 · 민사서류 · 민사집행
+              </p>
+            </div>
+          </a>
 
-function ConsultationForm() {
-  const [form, setForm] = useState({
-    email: "",
-    nameOrCompany: "",
-    category: "",
-    message: "",
-    agree: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState("");
-
-  const updateField = (key: keyof typeof form, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!form.agree) {
-      setSubmitMessage("개인정보 수집 및 이용에 동의해 주세요.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setSubmitMessage("");
-
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        throw new Error("상담 신청 전송에 실패했습니다.");
-      }
-
-      setSubmitMessage("상담 신청이 정상적으로 접수되었습니다.");
-      setForm({
-        email: "",
-        nameOrCompany: "",
-        category: "",
-        message: "",
-        agree: false,
-      });
-    } catch {
-      setSubmitMessage("전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-10 grid gap-5 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm md:p-8"
-    >
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        메일주소 <span className="text-red-600">*</span>
-        <input
-          required
-          type="email"
-          value={form.email}
-          onChange={(e) => updateField("email", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-          placeholder="example@domain.com"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        성명(법인명) <span className="text-red-600">*</span>
-        <input
-          required
-          value={form.nameOrCompany}
-          onChange={(e) => updateField("nameOrCompany", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-          placeholder="성명 또는 법인명을 입력해 주세요"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        업무 분류 <span className="text-red-600">*</span>
-        <select
-          required
-          value={form.category}
-          onChange={(e) => updateField("category", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-        >
-          <option value="">선택</option>
-          <option>법인등기</option>
-          <option>부동산등기</option>
-          <option>법원 서류</option>
-          <option>고소장</option>
-          <option>기타</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        문의 내용 <span className="text-red-600">*</span>
-        <textarea
-          required
-          value={form.message}
-          onChange={(e) => updateField("message", e.target.value)}
-          rows={8}
-          className="rounded-xl border border-stone-300 px-4 py-3 outline-none focus:border-emerald-800"
-          placeholder="문의하실 내용을 입력해 주세요"
-        />
-      </label>
-
-      <div className="max-h-48 overflow-y-auto rounded-2xl bg-stone-50 p-5 text-sm leading-7 text-stone-700">
-        {privacyPolicy.split("\n").map((line, index) => (
-          <p key={index} 
-          className={
-            line.startsWith("제") 
-              ? "mt-4 font-bold" 
-              : ""
-          }>
-            {line || " "}
-          </p>
-        ))}
-      </div>
-
-      <label className="flex items-center justify-center gap-2 text-sm text-stone-700">
-        <input
-          type="checkbox"
-          checked={form.agree}
-          onChange={(e) => updateField("agree", e.target.checked)}
-        />
-        개인정보 수집 및 이용에 동의합니다.
-      </label>
-
-      <button
-        type="submit"
-        disabled={!form.agree || isSubmitting}
-        className="h-12 rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
-      >
-        {isSubmitting ? "전송 중..." : "상담 제출"}
-      </button>
-
-      {submitMessage && (
-        <p className="text-center text-sm font-medium text-stone-700">{submitMessage}</p>
-      )}
-    </form>
-  );
-}
-
-export default function SoopLawOfficeHomepage() {
-  return (
-    <div className="min-h-screen bg-stone-50 text-stone-900">
-      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <LogoMark />
-          <nav className="hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex">
-            <a href="#services" className="hover:text-stone-950">업무분야</a>
-            <a href="#strength" className="hover:text-stone-950">강점</a>
-            <a href="#process" className="hover:text-stone-950">진행절차</a>
-            <a href="#contact" className="hover:text-stone-950">상담안내</a>
+          <nav className="hidden items-center gap-6 text-sm text-[#4f5d54] lg:flex">
+            {navItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="transition hover:text-[#163326]"
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
-          <Button className="rounded-full bg-emerald-900 px-5 hover:bg-emerald-950">
-            상담 문의
-          </Button>
+
+          <a
+            href="/contact"
+            className="rounded-full bg-[#163326] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#244f3c]"
+          >
+            상담문의
+          </a>
         </div>
       </header>
 
-      <main>
-        <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-50 via-white to-emerald-50">
-          <div className="pointer-events-none absolute right-[-8rem] top-[-8rem] hidden h-80 w-80 rounded-full bg-emerald-100/60 blur-3xl md:block" />
-          <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 py-14 md:grid-cols-[1.05fr_0.95fr] md:py-32">
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white px-5 py-4 shadow-sm md:px-6 md:py-5">
-                <LogoMark />
-              </div>
-              <div className="mb-5 inline-flex rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900 shadow-sm">
-                성동구·성수동 법인등기 및 부동산등기 실무 사무소
-              </div>
-              <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-                복잡한 등기 절차를
-                <br />
-                정확하고 차분하게 정리합니다.
-              </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-                {office.name}는 법인등기, 부동산등기, 상속절차, 민사 신청서류 작성까지
-                의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="tel:02-6956-8683"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950"
-                >
-                  전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
-                </a>
-                <Button variant="outline" className="h-12 rounded-full border-stone-300 px-7 text-base">
-                  업무분야 보기
-                </Button>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
-              <Card className="rounded-[2rem] border-stone-200 bg-white/90 shadow-xl">
-                <CardContent className="p-8">
-                  <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white">
-                    <ShieldCheck className="h-7 w-7" />
-                  </div>
-                  <h2 className="text-2xl font-bold">사건별 핵심 검토</h2>
-                  <p className="mt-3 leading-7 text-stone-600">
-                    단순 접수 대행이 아니라, 결의기관·공고·첨부서면·세무상 검토사항을 함께 확인하여
-                    보정 가능성을 줄이는 방식으로 진행합니다.
-                  </p>
-                  <div className="mt-8 grid gap-4">
-                    {strengths.map((item) => (
-                      <div key={item} className="flex items-start gap-3 rounded-2xl bg-stone-50 p-4">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-800" />
-                        <span className="text-sm font-medium text-stone-700">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-        </section>
-
-        <section id="services" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="font-semibold text-emerald-900">Practice Areas</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">주요 업무분야</h2>
-            <p className="mt-4 leading-7 text-stone-600">
-              법률관계와 등기절차가 맞물리는 업무를 중심으로, 필요한 서류와 결의 절차를 정리합니다.
+      <section className="border-b border-[#d9ded5]">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[1fr_0.85fr] lg:items-center lg:py-28">
+          <div>
+            <p className="mb-5 inline-flex rounded-full border border-[#cbd4cc] bg-white px-4 py-2 text-sm text-[#536358]">
+              실무 중심 · 절차 중심 · 문서 중심
             </p>
-          </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {services.map(({ icon: Icon, title, desc }) => (
-              <Card key={title} className="rounded-3xl border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-                <CardContent className="p-6">
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-900">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-xl font-bold">{title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-stone-600">{desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
 
-        <section id="strength" className="bg-white py-20">
-          <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-2">
-            <div>
-              <p className="font-semibold text-emerald-900">Why SOOP</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">문서 하나보다 절차 전체를 봅니다.</h2>
-              <p className="mt-5 leading-8 text-stone-600">
-                등기 업무는 신청서 작성만으로 끝나지 않습니다. 의사결정 구조, 공고 여부,
-                이해관계자 동의, 첨부서면, 세금, 향후 분쟁 가능성까지 함께 보아야 합니다.
-              </p>
-            </div>
-            <div className="grid gap-4">
-              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-6">
-                <ClipboardCheck className="mb-4 h-7 w-7 text-emerald-900" />
-                <h3 className="text-lg font-bold">체크리스트형 진행</h3>
-                <p className="mt-2 text-sm leading-7 text-stone-600">사건별 누락 가능 서류와 보정 가능 지점을 선제적으로 확인합니다.</p>
-              </div>
-              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-6">
-                <Users className="mb-4 h-7 w-7 text-emerald-900" />
-                <h3 className="text-lg font-bold">공동 검토 체계</h3>
-                <p className="mt-2 text-sm leading-7 text-stone-600">복잡한 사안은 내부 검토를 거쳐 실무상 가능한 방향을 정리합니다.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[#102219] sm:text-5xl lg:text-6xl">
+              법인등기와 민사실무,
+              <br />
+              필요한 절차부터 정확히 확인합니다.
+            </h1>
 
-        <section id="process" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 max-w-2xl">
-            <p className="font-semibold text-emerald-900">Process</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">진행 절차</h2>
+            <p className="mt-7 max-w-2xl text-base leading-8 text-[#526257] sm:text-lg">
+              숲 법무사 사무소는 회사의 등기 절차와 민사 실무 문서를
+              검토합니다. 복잡한 설명보다 필요한 자료, 절차, 기한, 서류를
+              기준으로 정리합니다.
+            </p>
+
+            <form
+              action="/resources"
+              className="mt-8 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[#d9ded5] bg-white p-3 shadow-sm sm:flex-row"
+            >
+              <input
+                name="q"
+                type="search"
+                placeholder="찾고 싶은 절차나 실무 내용을 검색해보세요."
+                className="min-h-12 flex-1 rounded-2xl border border-transparent px-4 text-sm outline-none placeholder:text-[#8b948d] focus:border-[#b7c3ba]"
+              />
+              <button
+                type="submit"
+                className="min-h-12 rounded-2xl bg-[#163326] px-6 text-sm font-medium text-white transition hover:bg-[#244f3c]"
+              >
+                검색
+              </button>
+            </form>
+
+            <div className="mt-8 flex flex-wrap gap-3 text-sm text-[#596b60]">
+              <span className="rounded-full bg-white px-4 py-2">
+                #법인설립
+              </span>
+              <span className="rounded-full bg-white px-4 py-2">
+                #임원변경
+              </span>
+              <span className="rounded-full bg-white px-4 py-2">
+                #지급명령
+              </span>
+              <span className="rounded-full bg-white px-4 py-2">
+                #채권압류
+              </span>
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-4">
-            {process.map((step, idx) => (
-              <div key={step} className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900 text-sm font-bold text-white">
-                  {idx + 1}
+
+          <div className="rounded-[2rem] border border-[#d9ded5] bg-white p-5 shadow-xl shadow-[#d9ded5]/60">
+            <div className="flex aspect-[4/5] items-center justify-center rounded-[1.5rem] bg-[#e5ebe4]">
+              <div className="px-8 text-center">
+                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-[#163326] text-5xl font-bold text-white">
+                  숲
                 </div>
-                <h3 className="font-bold">{step}</h3>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="border-y border-stone-200 bg-white py-20">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-10 max-w-2xl">
-              <p className="font-semibold text-emerald-900">Location</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">오시는 길</h2>
-              <p className="mt-4 leading-7 text-stone-600">
-                서울 성동구 연무장5가길 25, 315호 숲 법무사 사무소
-              </p>
-            </div>
-
-            <div className="grid items-center gap-8 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:grid-cols-[1fr_2fr]">
-              <div className="overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 shadow-sm">
-                <img
-                  src="/soop-office-map.PNG"
-                  alt="숲 법무사 사무소 위치 지도"
-                  className="h-auto w-full object-contain"
-                />
-              </div>
-
-              <div className="flex flex-col justify-center gap-4 md:pl-4">
-                <div>
-                  <h3 className="text-xl font-bold text-stone-900">숲 법무사 사무소 위치</h3>
-                  <p className="mt-2 text-sm leading-7 text-stone-600">
-                    성수역 인근, 서울 성동구 연무장5가길 25, 315호에 위치하고 있습니다.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href="https://map.naver.com/p/search/서울%20성동구%20연무장5가길%2025"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-950"
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-emerald-900">N</span>
-                    네이버지도에서 보기
-                  </a>
-
-                  <a
-                    href="https://map.kakao.com/link/search/서울 성동구 연무장5가길 25"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full bg-yellow-300 px-5 py-3 text-sm font-semibold text-stone-900 transition hover:bg-yellow-400"
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-900 text-xs font-black text-yellow-300">K</span>
-                    카카오맵에서 보기
-                  </a>
-
-                  <a
-                    href="https://www.google.com/maps/search/?api=1&query=서울%20성동구%20연무장5가길%2025"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-stone-300 bg-white text-xs font-black text-stone-700">G</span>
-                    구글맵에서 보기
-                  </a>
-                </div>
+                <p className="text-xl font-semibold text-[#1f2a24]">
+                  사무소 이미지 영역
+                </p>
+                <p className="mt-3 text-sm leading-6 text-[#66746b]">
+                  실제 사무소 사진, 상담실, 서류·책상 이미지 또는 브랜드
+                  그래픽을 배치합니다.
+                </p>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section id="consultation" className="bg-stone-50 py-20">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="max-w-2xl">
-              <p className="font-semibold text-emerald-900">Consultation</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">상담 신청</h2>
-              <p className="mt-4 leading-7 text-stone-600">
-                아래 내용을 작성하면 입력하신 내용이 이메일 형식으로 정리되어 사무소 메일로 발송됩니다.
-              </p>
-            </div>
-            <ConsultationForm />
-          </div>
-        </section>
-
-        <section id="contact" className="bg-emerald-950 py-20 text-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1fr_0.9fr]">
-            <div>
-              <p className="font-semibold text-emerald-200">Contact</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">상담이 필요하시면 연락 주십시오.</h2>
-              <p className="mt-5 max-w-2xl leading-8 text-emerald-50/80">
-                상담 전 사건의 종류, 당사자 정보, 현재 진행 단계, 보유 서류를 알려주시면 보다 정확한 안내가 가능합니다.
-              </p>
-            </div>
-            <Card className="rounded-3xl border-white/10 bg-white text-stone-900 shadow-xl">
-              <CardContent className="p-7">
-                <h3 className="text-2xl font-bold">{office.name}</h3>
-                <p className="mt-2 text-stone-600">{office.partners}</p>
-                <div className="mt-6 space-y-4 text-sm">
-                  <div className="flex gap-3">
-                    <Phone className="h-5 w-5 text-emerald-900" />
-                    <span className="font-semibold">{office.phone}</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <MapPin className="h-5 w-5 text-emerald-900" />
-                    <span>{office.address}</span>
-                  </div>
-                  <div className="flex gap-3">
-                    <FileText className="h-5 w-5 text-emerald-900" />
-                    <span>{office.email}</span>
-                  </div>
-                </div>
-                <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  <a
-                    href="tel:02-6956-8683"
-                    className="flex h-12 items-center justify-center rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950"
-                  >
-                    전화 상담
-                  </a>
-                  <a href={office.kakao} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-full border border-stone-300 text-base font-semibold text-stone-800 transition hover:bg-stone-50">
-                    카카오톡 상담
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-stone-200 bg-stone-950 px-6 py-10 text-stone-300">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="inline-flex rounded-2xl bg-white px-5 py-4">
-                <LogoMark />
-              </div>
-              <p className="mt-4 text-sm text-stone-400">정확한 절차 검토와 신뢰 있는 등기·서류 업무</p>
-            </div>
-            <div className="grid gap-2 text-sm leading-6 md:text-right">
-              <div>대표 법무사: 황배익 · 김지안</div>
-              <div>사업자등록번호: {office.businessNumber}</div>
-              <div>주소: {office.address}</div>
-              <div>전화: {office.phone}</div>
-              <div>이메일: {office.email}</div>
-              <div>
-                카카오톡 매장톡: <a href={office.kakao} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-white">바로가기</a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 border-t border-white/10 pt-6 text-xs text-stone-500">
-            © {new Date().getFullYear()} {office.name}. All rights reserved.
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-18">
+        <div className="mb-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+          <div>
+            <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
+              PRACTICE AREAS
+            </p>
+            <h2 className="text-3xl font-semibold tracking-tight text-[#102219]">
+              주요 업무 바로가기
+            </h2>
+          </div>
+          <p className="max-w-xl leading-7 text-[#526257]">
+            업무별 상세페이지에서는 개요, 해당되는 경우, 절차, 필요서류,
+            실무상 유의점, 자주 묻는 질문 순서로 정리합니다.
+          </p>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-3">
+          {practiceAreas.map((area) => (
+            <a
+              key={area.title}
+              href={area.href}
+              className="group rounded-3xl border border-[#d9ded5] bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#163326] text-lg font-semibold text-white">
+                {area.title.slice(0, 1)}
+              </div>
+              <h3 className="text-2xl font-semibold text-[#102219]">
+                {area.title}
+              </h3>
+              <p className="mt-4 min-h-28 leading-7 text-[#526257]">
+                {area.summary}
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {area.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-[#eef2ed] px-3 py-1 text-xs text-[#596b60]"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-6 text-sm font-semibold text-[#163326]">
+                자세히 보기 →
+              </p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-y border-[#d9ded5] bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-18">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
+                RECENT CONTENTS
+              </p>
+              <h2 className="text-3xl font-semibold tracking-tight text-[#102219]">
+                최신 실무 콘텐츠
+              </h2>
+            </div>
+            <a
+              href="/resources"
+              className="hidden rounded-full border border-[#cbd4cc] px-5 py-2.5 text-sm font-medium text-[#163326] transition hover:bg-[#eef2ed] sm:inline-flex"
+            >
+              전체 글 보기
+            </a>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-3">
+            {recentPosts.map((post) => (
+              <a
+                key={post.title}
+                href={post.href}
+                className="rounded-3xl border border-[#d9ded5] bg-[#f7f8f5] p-7 transition hover:bg-white hover:shadow-md"
+              >
+                <p className="mb-5 text-sm font-semibold text-[#66746b]">
+                  {post.category}
+                </p>
+                <h3 className="text-xl font-semibold leading-7 text-[#102219]">
+                  {post.title}
+                </h3>
+                <p className="mt-4 leading-7 text-[#526257]">
+                  {post.summary}
+                </p>
+                <p className="mt-6 text-sm font-semibold text-[#163326]">
+                  읽어보기 →
+                </p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 py-18">
+        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+          <div>
+            <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
+              FAQ
+            </p>
+            <h2 className="text-3xl font-semibold tracking-tight text-[#102219]">
+              자주 묻는 질문
+            </h2>
+            <p className="mt-5 leading-7 text-[#526257]">
+              실제 상담에서 자주 확인하는 절차와 기한, 준비자료를 중심으로
+              정리합니다.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq) => (
+              <div
+                key={faq.question}
+                className="rounded-3xl border border-[#d9ded5] bg-white p-6"
+              >
+                <h3 className="font-semibold text-[#102219]">
+                  Q. {faq.question}
+                </h3>
+                <p className="mt-3 leading-7 text-[#526257]">
+                  A. {faq.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#163326] text-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-18 lg:grid-cols-[1fr_0.85fr] lg:items-start">
+          <div>
+            <p className="mb-3 text-sm font-semibold tracking-wide text-[#b7c3ba]">
+              CONTACT
+            </p>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              상담 전 자료를 먼저 확인하면 절차가 명확해집니다.
+            </h2>
+            <p className="mt-6 max-w-2xl leading-8 text-[#d9e0da]">
+              회사명, 등기부등본, 정관, 주주명부, 의사록 또는 현재 상황을
+              보내주시면 필요한 절차와 준비서류를 검토합니다.
+            </p>
+
+            <div className="mt-8 space-y-3 text-[#e8eee8]">
+              <p>전화: 02-6956-8683</p>
+              <p>주소: 서울 성동구 연무장5가길 25, 315호</p>
+            </div>
+
+            <a
+              href="/contact"
+              className="mt-8 inline-flex rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#163326] transition hover:bg-[#eef2ed]"
+            >
+              상담문의 작성하기
+            </a>
+          </div>
+
+          <div className="rounded-3xl bg-white p-7 text-[#1f2a24]">
+            <h3 className="text-2xl font-semibold">상담 전 준비자료</h3>
+            <ul className="mt-6 space-y-4 text-[#526257]">
+              <li>✓ 회사 등기부등본</li>
+              <li>✓ 정관 및 주주명부</li>
+              <li>✓ 최근 의사록 또는 결의서</li>
+              <li>✓ 변경하려는 내용의 요약</li>
+            </ul>
+
+            <div className="mt-8 max-h-48 overflow-y-auto rounded-2xl bg-[#f7f8f5] p-5 text-sm leading-7 text-[#526257]">
+              {privacyPolicy.split("\n").map((line, index) => (
+                <p
+                  key={index}
+                  className={
+                    line.startsWith("제")
+                      ? "mt-4 font-bold text-[#102219]"
+                      : ""
+                  }
+                >
+                  {line || "\u00A0"}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#d9ded5] bg-[#f7f8f5]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-8 text-sm text-[#66746b] lg:flex-row lg:items-center lg:justify-between">
+          <p>
+            <strong className="text-[#102219]">숲 법무사 사무소</strong> · 대표
+            법무사 황배익, 김지안
+          </p>
+          <p>© SOOP Certified Judicial Scrivener Office. All rights reserved.</p>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }

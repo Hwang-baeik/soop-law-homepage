@@ -12,27 +12,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const isProduction = process.env.VERCEL_ENV === "production";
+
 export const metadata: Metadata = {
-  title: "숲 법무사 사무소",
-  description: "숲 법무사 사무소에 오신것을 환영합니다.",
-    
-    verification: {
-    google: "kEDBgoWg7GpUDbUjWnLofF2Cy4A4Qg3onmY4TpGtINY",
-    other: {
-      "naver-site-verification": "c3f0dffec0cd8fa5698befb437956d73352831fa" ,
-    },
-  },
-  openGraph: {
-    title: "숲 법무사 사무소",
-    description:
-      "법인등기, 부동산등기, 상속등기, 민사서류 업무를 정확하게 안내합니다.",
-    url: "https://sooplaw.com",
-    siteName: "숲 법무사 사무소",
-    locale: "ko_KR",
-    type: "website",
+  robots: {
+    index: isProduction,
+    follow: isProduction,
   },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
