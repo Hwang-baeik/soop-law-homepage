@@ -197,9 +197,10 @@ function ConsultationForm() {
       </label>
 
       <div className="max-h-48 overflow-y-auto rounded-2xl bg-stone-50 p-5 text-sm leading-7 text-stone-700">
-        {privacyPolicy.split("\n").map((line, index) => (
+        {privacyPolicy.split("
+").map((line, index) => (
           <p key={index} className={line.startsWith("제") ? "mt-4 font-bold" : ""}>
-            {line || "\u00A0"}
+            {line || " "}
           </p>
         ))}
       </div>
@@ -247,14 +248,14 @@ export default function SoopLawOfficeHomepage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-100 via-white to-emerald-50">
-          <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-emerald-100 blur-3xl" />
-          <div className="mx-auto grid max-w-7xl gap-12 px-6 py-24 md:grid-cols-[1.05fr_0.95fr] md:py-32">
+        <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-50 via-white to-emerald-50">
+          <div className="pointer-events-none absolute right-[-8rem] top-[-8rem] hidden h-80 w-80 rounded-full bg-emerald-100/60 blur-3xl md:block" />
+          <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 py-14 md:grid-cols-[1.05fr_0.95fr] md:py-32">
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white/80 px-6 py-5 shadow-sm">
+              <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white px-5 py-4 shadow-sm md:px-6 md:py-5">
                 <LogoMark />
               </div>
-              <div className="mb-5 inline-flex rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900">
+              <div className="mb-5 inline-flex rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900 shadow-sm">
                 성동구·성수동 법인등기 및 부동산등기 실무 사무소
               </div>
               <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">

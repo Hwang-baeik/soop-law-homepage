@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "숲 법무사 사무소",
   description: "숲 법무사 사무소에 오신것을 환영합니다.",
+    
+    verification: {
+    google: "kEDBgoWg7GpUDbUjWnLofF2Cy4A4Qg3onmY4TpGtINY",
+    other: {
+      "naver-site-verification": "c3f0dffec0cd8fa5698befb437956d73352831fa" ,
+    },
+  },
   openGraph: {
     title: "숲 법무사 사무소",
     description:
