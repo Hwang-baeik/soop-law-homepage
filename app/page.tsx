@@ -135,83 +135,76 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="border-b border-[#d9ded5]">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[1fr_0.85fr] lg:items-center lg:py-28">
-          <div>
-            <p className="mb-5 inline-flex rounded-full border border-[#cbd4cc] bg-white px-4 py-2 text-sm text-[#536358]">
-              실무 중심 · 절차 중심 · 문서 중심
-            </p>
+<section className="border-b border-[#d9ded5]">
+  <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 lg:grid-cols-[1fr_0.85fr] lg:items-center lg:py-28">
+    <div>
+      <p className="mb-5 inline-flex rounded-full border border-[#cbd4cc] bg-white px-4 py-2 text-sm text-[#536358]">
+        실무 중심 · 절차 중심 · 문서 중심
+      </p>
 
-            <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[#102219] sm:text-5xl lg:text-6xl">
-              법인등기와 민사실무,
-              <br />
-              필요한 절차부터 정확히 확인합니다.
-            </h1>
+      <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-[#102219] sm:text-5xl lg:text-6xl">
+        법인등기와 민사실무,
+        <br />
+        필요한 절차부터 정확히 확인합니다.
+      </h1>
 
-            <p className="mt-7 max-w-2xl text-base leading-8 text-[#526257] sm:text-lg">
-              숲 법무사 사무소는 회사의 등기 절차와 민사 실무 문서를
-              검토합니다. 복잡한 설명보다 필요한 자료, 절차, 기한, 서류를
-              기준으로 정리합니다.
-            </p>
+      <p className="mt-7 max-w-2xl text-base leading-8 text-[#526257] sm:text-lg">
+        숲 법무사 사무소는 회사의 등기 절차와 민사 실무 문서를
+        검토합니다. 복잡한 설명보다 필요한 자료, 절차, 기한, 서류를
+        기준으로 정리합니다.
+      </p>
 
-            <form
-              action="/resources"
-              className="mt-8 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[#d9ded5] bg-white p-3 shadow-sm sm:flex-row"
-            >
-              <input
-                name="q"
-                type="search"
-                placeholder="찾고 싶은 절차나 실무 내용을 검색해보세요."
-                className="min-h-12 flex-1 rounded-2xl border border-transparent px-4 text-sm outline-none placeholder:text-[#8b948d] focus:border-[#b7c3ba]"
-              />
-              <button
-                type="submit"
-                className="min-h-12 rounded-2xl bg-[#163326] px-6 text-sm font-medium text-white transition hover:bg-[#244f3c]"
-              >
-                검색
-              </button>
-            </form>
+      <form
+        action="/resources"
+        className="mt-8 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[#d9ded5] bg-white p-3 shadow-sm sm:flex-row"
+      >
+        <input
+          name="q"
+          type="search"
+          placeholder="찾고 싶은 절차나 실무 내용을 검색해보세요."
+          className="min-h-12 flex-1 rounded-2xl border border-transparent px-4 text-sm outline-none placeholder:text-[#8b948d] focus:border-[#b7c3ba]"
+        />
+        <button
+          type="submit"
+          className="min-h-12 rounded-2xl bg-[#163326] px-6 text-sm font-medium text-white transition hover:bg-[#244f3c]"
+        >
+          검색
+        </button>
+      </form>
 
-            <div className="mt-8 flex flex-wrap gap-3 text-sm text-[#596b60]">
-              <span className="rounded-full bg-white px-4 py-2">
-                #법인설립
-              </span>
-              <span className="rounded-full bg-white px-4 py-2">
-                #임원변경
-              </span>
-              <span className="rounded-full bg-white px-4 py-2">
-                #지급명령
-              </span>
-              <span className="rounded-full bg-white px-4 py-2">
-                #채권압류
-              </span>
-            </div>
+      <div className="mt-8 flex flex-wrap gap-3 text-sm text-[#596b60]">
+        <span className="rounded-full bg-white px-4 py-2">#법인설립</span>
+        <span className="rounded-full bg-white px-4 py-2">#임원변경</span>
+        <span className="rounded-full bg-white px-4 py-2">#지급명령</span>
+        <span className="rounded-full bg-white px-4 py-2">#채권압류</span>
+      </div>
+    </div>
+
+    <div className="rounded-[2rem] border border-[#d9ded5] bg-white p-5 shadow-xl shadow-[#d9ded5]/60">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-[#e5ebe4]">
+        <img
+          src={mainOfficeImage.src}
+          alt={mainOfficeImage.alt}
+          className="h-full w-full object-cover"
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-[#102219]/70 via-[#102219]/20 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-7 text-white">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 text-2xl font-bold text-[#163326]">
+            숲
           </div>
-
-      <div className="rounded-[2rem] border border-[#d9ded5] bg-white p-5 shadow-xl shadow-[#d9ded5]/60">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-[#e5ebe4]">
-          <img
-            src={mainOfficeImage.src}
-            alt={mainOfficeImage.alt}
-            className="h-full w-full object-cover"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-[#102219]/70 via-[#102219]/20 to-transparent" />
-
-          <div className="absolute bottom-0 left-0 right-0 p-7 text-white">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 text-2xl font-bold text-[#163326]">
-              숲
-            </div>
-            <p className="text-2xl font-semibold">숲 법무사 사무소</p>
-            <p className="mt-2 text-sm leading-6 text-white/85">
-              법인등기 · 민사서류 · 민사집행 절차를 실무적으로 검토합니다.
-            </p>
-          </div>
+          <p className="text-2xl font-semibold">숲 법무사 사무소</p>
+          <p className="mt-2 text-sm leading-6 text-white/85">
+            법인등기 · 민사서류 · 민사집행 절차를 실무적으로 검토합니다.
+          </p>
         </div>
       </div>
-      </section>
+    </div>
+  </div>
+</section>
 
-      <section className="mx-auto max-w-7xl px-5 py-18">
+      <section className="mx-auto max-w-7xl px-5 py-20">
         <div className="mb-10 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
@@ -262,7 +255,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-[#d9ded5] bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-18">
+        <div className="mx-auto max-w-7xl px-5 py-20">
           <div className="mb-10 flex items-end justify-between gap-4">
             <div>
               <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
@@ -305,7 +298,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-18">
+      <section className="mx-auto max-w-7xl px-5 py-20">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <div>
             <p className="mb-3 text-sm font-semibold tracking-wide text-[#66746b]">
