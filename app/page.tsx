@@ -197,8 +197,7 @@ function ConsultationForm() {
       </label>
 
       <div className="max-h-48 overflow-y-auto rounded-2xl bg-stone-50 p-5 text-sm leading-7 text-stone-700">
-        {privacyPolicy.split("
-").map((line, index) => (
+        {privacyPolicy.split("").map((line, index) => (
           <p key={index} className={line.startsWith("제") ? "mt-4 font-bold" : ""}>
             {line || " "}
           </p>
