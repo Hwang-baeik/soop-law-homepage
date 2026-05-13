@@ -8,6 +8,11 @@ const navItems = [
   { label: "실무 자료실", href: "/resources" },
 ];
 
+const mainOfficeImage = {
+  src: "/images/office-main.jpg",
+  alt: "숲 법무사 사무소 상담실 또는 사무소 대표 이미지",
+};
+
 const practiceAreas = [
   {
     title: "법인등기 절차",
@@ -183,23 +188,27 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-[#d9ded5] bg-white p-5 shadow-xl shadow-[#d9ded5]/60">
-            <div className="flex aspect-[4/5] items-center justify-center rounded-[1.5rem] bg-[#e5ebe4]">
-              <div className="px-8 text-center">
-                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-[#163326] text-5xl font-bold text-white">
-                  숲
-                </div>
-                <p className="text-xl font-semibold text-[#1f2a24]">
-                  사무소 이미지 영역
-                </p>
-                <p className="mt-3 text-sm leading-6 text-[#66746b]">
-                  실제 사무소 사진, 상담실, 서류·책상 이미지 또는 브랜드
-                  그래픽을 배치합니다.
-                </p>
-              </div>
+      <div className="rounded-[2rem] border border-[#d9ded5] bg-white p-5 shadow-xl shadow-[#d9ded5]/60">
+        <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-[#e5ebe4]">
+          <img
+            src={mainOfficeImage.src}
+            alt={mainOfficeImage.alt}
+            className="h-full w-full object-cover"
+          />
+
+          <div className="absolute inset-0 bg-gradient-to-t from-[#102219]/70 via-[#102219]/20 to-transparent" />
+
+          <div className="absolute bottom-0 left-0 right-0 p-7 text-white">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 text-2xl font-bold text-[#163326]">
+              숲
             </div>
+            <p className="text-2xl font-semibold">숲 법무사 사무소</p>
+            <p className="mt-2 text-sm leading-6 text-white/85">
+              법인등기 · 민사서류 · 민사집행 절차를 실무적으로 검토합니다.
+            </p>
           </div>
         </div>
+      </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-5 py-18">
@@ -339,7 +348,7 @@ export default function HomePage() {
               상담 전 자료를 먼저 확인하면 절차가 명확해집니다.
             </h2>
             <p className="mt-6 max-w-2xl leading-8 text-[#d9e0da]">
-              회사명, 등기부등본, 정관, 주주명부, 의사록 또는 현재 상황을
+              회사명, 등기부등본, 정관, 주주명부, 변경하고자 하는 사항을
               보내주시면 필요한 절차와 준비서류를 검토합니다.
             </p>
 
@@ -359,9 +368,8 @@ export default function HomePage() {
           <div className="rounded-3xl bg-white p-7 text-[#1f2a24]">
             <h3 className="text-2xl font-semibold">상담 전 준비자료</h3>
             <ul className="mt-6 space-y-4 text-[#526257]">
-              <li>✓ 회사 등기부등본</li>
-              <li>✓ 정관 및 주주명부</li>
-              <li>✓ 최근 의사록 또는 결의서</li>
+              <li>✓ 주주명부</li>
+              <li>✓ 정관 </li>
               <li>✓ 변경하려는 내용의 요약</li>
             </ul>
 
