@@ -2,9 +2,22 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, FileText, Home, Scale, MapPin, Phone, CheckCircle2, ArrowRight, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
+import {
+  Building2,
+  FileText,
+  Scale,
+  MapPin,
+  Phone,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
+  ClipboardCheck,
+  Users,
+} from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import Link from "next/link";
+
 
 const office = {
   name: "숲 법무사 사무소",
@@ -20,26 +33,20 @@ const services = [
   {
     icon: Building2,
     title: "법인등기",
-    desc: "설립, 임원변경, 본점이전, 증자·감자, 정관변경, 종류주식 등 법인 절차를 정확하게 검토합니다.",
-    href: "#consultation",
-  },
-  {
-    icon: Home,
-    title: "부동산등기",
-    desc: "소유권이전, 근저당권, 상속·증여, 말소, 가등기 등 권리관계에 맞는 등기 절차를 진행합니다.",
-    href: "#consultation",
+    href: "/board?category=법인등기%20절차",
+    desc: "설립, 임원변경, 본점이전, 증자·감자, 정관변경 등",
   },
   {
     icon: FileText,
-    title: "상속·가족관계 절차",
-    desc: "상속등기, 상속포기, 한정승인, 가족관계 서류 검토 등 사안별 위험요소를 함께 점검합니다.",
-    href: "#consultation",
+    title: "민사서류",
+    href: "/board?category=민사서류%20절차",
+    desc: "내용증명, 지급명령, 소장, 신청서 작성 등",
   },
   {
     icon: Scale,
-    title: "민사 신청·서류 작성",
-    desc: "지급명령, 내용증명, 제소전화해, 각종 신청서 작성 등 실무형 문서 업무를 지원합니다.",
-    href: "#consultation",
+    title: "민사집행",
+    href: "/board?category=민사집행%20절차",
+    desc: "압류, 추심, 강제집행 등",
   },
 ];
 
@@ -323,7 +330,7 @@ export default function SoopLawOfficeHomepage() {
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {services.map(({ icon: Icon, title, desc, href }) => (
-                <a
+                <Link
                   key={title}
                   href={href}
                   className="rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
@@ -335,7 +342,7 @@ export default function SoopLawOfficeHomepage() {
                     <h3 className="text-xl font-bold">{title}</h3>
                     <p className="mt-3 text-sm leading-7 text-stone-600">{desc}</p>
                   </div>
-                </a>
+                </Link>
             ))}
           </div>
         </section>
