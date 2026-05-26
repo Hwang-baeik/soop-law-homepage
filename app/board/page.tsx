@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { posts } from "../lib/posts";
+import { posts } from "../../lib/posts";
 
 export const metadata = {
   title: "실무 자료실 | 숲 법무사 사무소",
@@ -34,7 +34,7 @@ export default function BoardPage({
         <p className="font-semibold text-emerald-900">SOOP Practical Archive</p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight">실무 자료실</h1>
         <p className="mt-4 max-w-2xl leading-7 text-stone-600">
-          법인등기, 민사서류, 민사집행, 실무사례, 자주 묻는 질문을 하나의 자료실에서 분류하여 제공합니다.
+          법인등기, 민사서류, 민사집행, 실무사례, 자주 묻는 질문에 대하여 확인해보세요.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">

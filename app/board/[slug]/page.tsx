@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { posts } from "../../lib/posts";
+import { posts } from "../../../lib/posts";
 
 export function generateStaticParams() {
   return posts.map((post) => ({
