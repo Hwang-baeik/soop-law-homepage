@@ -48,7 +48,7 @@ export const posts: Post[] = [
   },
 
   {
-    slug: "corporate-registration-overview",
+    slug: "corporate-officer-term-renewal-registration",
     title: "주식회사의 임원의 임기와 중임등기",
     description: "주식회사의 임원의 임기에 대하여 정리하고, 이를 관리하는 절차를 안내합니다.",
     category: "법인등기 절차",
