@@ -7,12 +7,13 @@ export const metadata = {
     "법인등기 절차, 민사서류 절차, 민사집행 절차, 실무사례, 자주 묻는 질문을 정리한 숲 법무사 사무소 실무 자료실입니다.",
 };
 
-export default function BoardPage({
-  searchParams,
-}: {
-  searchParams?: { category?: string };
-}) {
-  const selectedCategory = searchParams?.category;
+function getCategoryParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function BoardPage(props: PageProps<"/board">) {
+  const searchParams = await props.searchParams;
+  const selectedCategory = getCategoryParam(searchParams.category);
 
   const categories = [
     "전체",

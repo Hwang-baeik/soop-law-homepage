@@ -7,12 +7,11 @@ export function generateStaticParams() {
   }));
 }
 
-export function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const post = posts.find((item) => item.slug === params.slug);
+export async function generateMetadata(
+  props: PageProps<"/board/[slug]">
+) {
+  const { slug } = await props.params;
+  const post = posts.find((item) => item.slug === slug);
 
   if (!post) {
     return {
@@ -35,12 +34,11 @@ export function generateMetadata({
   };
 }
 
-export default function PostDetailPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const post = posts.find((item) => item.slug === params.slug);
+export default async function PostDetailPage(
+  props: PageProps<"/board/[slug]">
+) {
+  const { slug } = await props.params;
+  const post = posts.find((item) => item.slug === slug);
 
   if (!post) {
     notFound();
