@@ -320,6 +320,35 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
+        <section className="border-b border-stone-200 bg-white py-16 md:py-20">
+          <div className="mx-auto grid max-w-7xl gap-8 px-6 md:grid-cols-[0.95fr_1.05fr] md:items-center">
+            <div>
+              <p className="font-semibold text-emerald-900">For Professionals</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+                전문가의 실무 파트너로도 함께합니다.
+              </h2>
+            </div>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-6 md:p-8">
+              <p className="text-base leading-8 text-stone-700">
+                숲 법무사 사무소는 세무사, 노무사, 변호사 등 여러 전문가들과 함께 실무를
+                진행해 왔습니다. 고객 업무 중 법무 처리나 등기 절차가 필요한 사안이 있다면,
+                기존 자문 흐름을 해치지 않도록 필요한 범위를 정리해 차분하게 지원합니다.
+              </p>
+              <div className="mt-6 grid gap-3 text-sm font-medium text-stone-700 sm:grid-cols-3">
+                {["법인·부동산 등기", "민사 신청서류", "절차·서류 검토"].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 border-l border-emerald-800/30 pl-3"
+                  >
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-900" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="services" className="mx-auto max-w-7xl px-6 py-20">
           <div className="max-w-2xl">
             <p className="font-semibold text-emerald-900">Practice Areas</p>
@@ -345,6 +374,20 @@ export default function SoopLawOfficeHomepage() {
                 </Link>
             ))}
           </div>
+          <Link
+            href="/board"
+            className="mt-8 flex flex-col gap-5 rounded-2xl border border-emerald-900/15 bg-emerald-950 px-6 py-6 text-white shadow-sm transition hover:bg-emerald-900 md:flex-row md:items-center md:justify-between md:px-8"
+          >
+            <div>
+              <p className="text-sm font-semibold text-emerald-100">업무 안내 자료</p>
+              <p className="mt-2 max-w-2xl text-lg font-bold leading-7">
+                각 업무의 절차와 준비서류가 궁금하다면 정리된 안내글을 확인해 보세요.
+              </p>
+            </div>
+            <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-emerald-950">
+              안내글 보기 <ArrowRight className="ml-2 h-4 w-4" />
+            </span>
+          </Link>
         </section>
 
         <section id="strength" className="bg-white py-20">

@@ -9,6 +9,11 @@ type ContentBlock =
   | {
       type: "ordered-list";
       items: string[];
+    }
+  | {
+      type: "heading";
+      level: 3 | 4;
+      text: string;
     };
 
 type PostSection = {
@@ -47,11 +52,23 @@ function parseBlocks(lines: string[]) {
 
   lines.forEach((line) => {
     const trimmedLine = line.trim();
+    const subheading = trimmedLine.match(/^(#{3,4})\s*(.+)$/);
     const orderedItem = trimmedLine.match(/^\d+\.\s+(.+)$/);
 
     if (!trimmedLine) {
       flushParagraph();
       flushList();
+      return;
+    }
+
+    if (subheading) {
+      flushParagraph();
+      flushList();
+      blocks.push({
+        type: "heading",
+        level: subheading[1].length as 3 | 4,
+        text: subheading[2].trim(),
+      });
       return;
     }
 
@@ -93,7 +110,7 @@ function parsePostSections(content: string) {
     .replace(/\r\n/g, "\n")
     .split("\n")
     .forEach((line) => {
-      const sectionHeading = line.match(/^##\s+(.+)$/);
+      const sectionHeading = line.trim().match(/^##(?!#)\s*(.+)$/);
 
       if (sectionHeading) {
         flushSection();
@@ -195,8 +212,30 @@ export default async function PostDetailPage(
                     {section.title}
                   </h2>
 
-                  <div className="mt-4 space-y-4 text-[15px] leading-8 text-stone-700">
+                  <div className="mt-5 space-y-4 text-[15px] leading-8 text-stone-700">
                     {section.blocks.map((block, blockIndex) => {
+                      if (block.type === "heading") {
+                        if (block.level === 3) {
+                          return (
+                            <h3
+                              key={blockIndex}
+                              className="border-l-4 border-emerald-800 bg-emerald-50 px-4 py-2 text-lg font-bold leading-7 text-emerald-950"
+                            >
+                              {block.text}
+                            </h3>
+                          );
+                        }
+
+                        return (
+                          <h4
+                            key={blockIndex}
+                            className="ml-4 border-l-2 border-stone-300 pl-4 text-base font-semibold leading-7 text-stone-900"
+                          >
+                            {block.text}
+                          </h4>
+                        );
+                      }
+
                       if (block.type === "ordered-list") {
                         return (
                           <ol
