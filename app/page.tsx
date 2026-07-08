@@ -24,7 +24,7 @@ const office = {
   partners: "법무사 황배익 · 법무사 김지안",
   address: "서울 성동구 연무장5가길 25, 315호",
   phone: "02-6956-8683",
-  email: "soop_lawoffice@naver.com",
+  email: "soop@sooplaw.com",
   kakao: "https://pf.kakao.com/_cZxddX",
   businessNumber: "478-02-02146",
 };
@@ -84,7 +84,7 @@ const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니�
 제6조 (개인정보 보호책임자)
 개인정보 보호 및 관련 문의는 숲 법무사 사무소로 연락하실 수 있습니다.
 전화: 02-6956-8683
-이메일: soop_lawoffice@naver.com`;
+이메일: soop@sooplaw.com`;
 
 function LogoMark({ compact = false }: { compact?: boolean }) {
   return (
