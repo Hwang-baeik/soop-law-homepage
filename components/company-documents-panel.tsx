@@ -20,7 +20,7 @@ type CompanyDocument = {
 const typeLabel: Record<CompanyDocument["document_type"], string> = {
   articles: "정관",
   shareholder_register: "주주명부",
-  registry: "등기 관련 문서",
+  registry: "등기부등본",
   other: "기타 문서",
 };
 
@@ -44,7 +44,7 @@ export function CompanyDocumentsPanel({ companyId }: { companyId: string }) {
       }
       try {
         const response = await rest(
-          `company_documents?company_id=eq.${encodeURIComponent(companyId)}&select=*&order=uploaded_at.desc`,
+          `company_documents?company_id=eq.${encodeURIComponent(companyId)}&document_type=neq.registry&select=*&order=uploaded_at.desc`,
           session.access_token,
         );
         if (!response.ok) throw new Error("문서 목록을 불러오지 못했습니다.");
