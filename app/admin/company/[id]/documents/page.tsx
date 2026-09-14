@@ -6,9 +6,9 @@ export default async function AdminCompanyDocumentsPage({ params }: { params: Pr
   const { id } = await params;
 
   return (
-    <AccountShell title="회사 문서 관리" description="정관·주주명부 등 회사별 문서를 업로드합니다. 관리자 계정만 사용할 수 있도록 권한이 적용됩니다.">
+    <AccountShell title="회사 문서 관리" description="정관·주주명부 등 회사별 내부 문서를 관리자 권한으로 업로드합니다.">
       <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950">
-        업로드된 문서는 비공개 Storage에 저장되고, 승인된 회사 구성원만 내려받을 수 있습니다. 파일 경로도 회사별로 분리됩니다.
+        등기부등본 PDF는 이 화면이 아니라 각 회사 상세 화면에서 해당 회사의 소유주 또는 관리권한 회원이 직접 등록합니다. 정관·주주명부·기타 문서는 이 관리자 화면에서 관리합니다.
       </div>
       <CompanyDocumentUploader companyId={id} />
       <div className="mt-6">
