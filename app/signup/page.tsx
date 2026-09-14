@@ -12,16 +12,19 @@ export default function SignupPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const companyName = String(data.get("companyName") ?? "").trim();
     const applicantName = String(data.get("applicantName") ?? "").trim();
     const corporateNumber = String(data.get("corporateNumber") ?? "").replace(/-/g, "");
     const phone = String(data.get("phone") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
     const password = String(data.get("password") ?? "");
+    const passwordConfirm = String(data.get("passwordConfirm") ?? "");
 
     if (!CORPORATE_NUMBER_PATTERN.test(corporateNumber)) return setMessage("법인등록번호는 숫자 13자리로 입력해 주세요.");
     if (!PASSWORD_PATTERN.test(password)) return setMessage("비밀번호는 영문, 숫자, 특수문자를 포함하여 8자리 이상이어야 합니다.");
+    if (password !== passwordConfirm) return setMessage("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
 
     try {
       setSubmitting(true);
@@ -32,7 +35,7 @@ export default function SignupPage() {
         company_name: companyName,
         corporate_registration_number: corporateNumber,
       });
-      event.currentTarget.reset();
+      form.reset();
       setMessage("가입 신청이 접수되었습니다. 이메일 확인 후 관리자 승인을 기다려 주세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "회원가입 중 오류가 발생했습니다.");
@@ -50,6 +53,7 @@ export default function SignupPage() {
         <label className="grid gap-2 text-sm font-semibold">연락처<input name="phone" required type="tel" className={fieldClassName} placeholder="010-0000-0000" /></label>
         <label className="grid gap-2 text-sm font-semibold">이메일(로그인 ID)<input name="email" required type="email" className={fieldClassName} autoComplete="email" placeholder="example@company.com" /></label>
         <label className="grid gap-2 text-sm font-semibold">비밀번호<input name="password" required type="password" className={fieldClassName} autoComplete="new-password" placeholder="영문·숫자·특수문자 포함 8자리 이상" /></label>
+        <label className="grid gap-2 text-sm font-semibold">비밀번호 확인<input name="passwordConfirm" required type="password" className={fieldClassName} autoComplete="new-password" placeholder="비밀번호를 한 번 더 입력해 주세요" /></label>
         <button disabled={submitting} className={primaryButtonClassName}>{submitting ? "가입 신청 중..." : "가입 승인 요청"}</button>
         {message && <p className="rounded-xl bg-stone-100 p-4 text-sm leading-6 text-stone-700">{message}</p>}
       </form>
