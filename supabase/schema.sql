@@ -48,6 +48,11 @@ create policy "companies_read_member" on public.companies for select to authenti
 
 create policy "company_members_read_self" on public.company_members for select to authenticated using (user_id = auth.uid());
 
--- 회사정보는 관리자가 갱신하고, 회원은 owner(소유주) 또는 manager(관리권한)로 연결합니다.
+-- 회사 문서는 별도 company_documents 테이블과 private Storage bucket(company-documents)에서 관리합니다.
+-- 정관/주주명부/기타 문서는 관리자 업로드를 원칙으로 합니다.
+-- 등기부등본(document_type='registry')은 승인된 해당 회사 owner/manager 회원도
+-- `{company_id}/registry/...` 경로에 PDF를 직접 업로드할 수 있도록 별도 RLS 정책을 적용합니다.
+-- 다운로드는 승인된 해당 회사 구성원에게만 허용합니다.
+
 -- 관리자 승인/거절 및 계정 생성은 service role을 사용하는 서버 전용 Route Handler에서 처리합니다.
 -- service role key를 NEXT_PUBLIC_* 환경변수에 넣거나 브라우저 코드에 노출하지 마십시오.
