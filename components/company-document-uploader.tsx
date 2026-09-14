@@ -7,7 +7,6 @@ import { getSession, rest } from "../lib/supabase-browser";
 const documentTypes = [
   ["articles", "정관"],
   ["shareholder_register", "주주명부"],
-  ["registry", "등기 관련 문서"],
   ["other", "기타 문서"],
 ] as const;
 
@@ -90,7 +89,7 @@ export function CompanyDocumentUploader({ companyId }: { companyId: string }) {
       <div className="grid gap-2">
         <label className="text-sm font-bold text-stone-700">파일</label>
         <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.hwp,.hwpx,image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="rounded-xl border border-dashed border-stone-300 p-4 text-sm" />
-        <p className="text-xs leading-5 text-stone-500">정관·주주명부는 PDF를 권장합니다. 그 밖의 회사 보관문서도 등록할 수 있습니다.</p>
+        <p className="text-xs leading-5 text-stone-500">정관·주주명부는 PDF를 권장합니다. 등기부등본 PDF는 회사 상세 화면에서 소유주 또는 관리권한 회원이 직접 등록합니다.</p>
       </div>
       <button type="button" onClick={upload} disabled={uploading} className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-900 px-5 text-sm font-bold text-white disabled:bg-stone-300">
         <Upload className="h-4 w-4" /> {uploading ? "업로드 중..." : "문서 업로드"}
