@@ -25,6 +25,7 @@ create table public.companies (
 create table public.company_members (
   company_id uuid not null references public.companies(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
+  member_role text not null default 'manager' check (member_role in ('owner', 'manager')),
   created_at timestamptz not null default now(),
   primary key (company_id, user_id)
 );
@@ -47,5 +48,6 @@ create policy "companies_read_member" on public.companies for select to authenti
 
 create policy "company_members_read_self" on public.company_members for select to authenticated using (user_id = auth.uid());
 
+-- 회사정보는 관리자가 갱신하고, 회원은 owner(소유주) 또는 manager(관리권한)로 연결합니다.
 -- 관리자 승인/거절 및 계정 생성은 service role을 사용하는 서버 전용 Route Handler에서 처리합니다.
 -- service role key를 NEXT_PUBLIC_* 환경변수에 넣거나 브라우저 코드에 노출하지 마십시오.
