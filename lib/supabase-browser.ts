@@ -34,7 +34,12 @@ export type AuthSession = {
   user: { id: string; email?: string };
 };
 
-export async function signUp(email: string, password: string, metadata: Record<string, string>) {
+export type SignUpResult = {
+  access_token?: string | null;
+  user?: { id: string; email?: string; identities?: unknown[] } | null;
+};
+
+export async function signUp(email: string, password: string, metadata: Record<string, string>): Promise<SignUpResult> {
   const { supabaseUrl, publishableKey } = getSupabaseConfig();
   const response = await fetch(`${supabaseUrl}/auth/v1/signup`, {
     method: "POST",
@@ -58,6 +63,22 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   return data;
 }
 
+export async function updatePassword(token: string, newPassword: string) {
+  const { supabaseUrl, publishableKey } = getSupabaseConfig();
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.msg || data.message || data.error_description || "비밀번호 변경에 실패했습니다.");
+  return data;
+}
+
 export function saveSession(session: AuthSession) {
   sessionStorage.setItem("soop_session", JSON.stringify(session));
 }
@@ -76,6 +97,11 @@ export async function rest(path: string, token: string, init?: RequestInit) {
   const { supabaseUrl, publishableKey } = getSupabaseConfig();
   return fetch(`${supabaseUrl}/rest/v1/${path}`, {
     ...init,
-    headers: { apikey: publishableKey, Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
   });
 }
