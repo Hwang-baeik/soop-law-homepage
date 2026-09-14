@@ -21,7 +21,10 @@ export default function LoginPage() {
       setSubmitting(true);
       setMessage("");
       const session = await signIn(email, password);
-      const profileResponse = await rest(`profiles?id=eq.${encodeURIComponent(session.user.id)}&select=role,status`, session.access_token);
+      const profileResponse = await rest(
+        `profiles?id=eq.${encodeURIComponent(session.user.id)}&select=role,status,must_change_password`,
+        session.access_token,
+      );
       if (!profileResponse.ok) throw new Error("회원 정보를 확인하지 못했습니다.");
       const profiles = await profileResponse.json();
       const profile = profiles?.[0];
@@ -29,6 +32,10 @@ export default function LoginPage() {
       if (profile.status !== "approved") throw new Error("아직 관리자 승인이 완료되지 않았습니다.");
 
       saveSession(session);
+      if (profile.must_change_password) {
+        router.push("/change-password?required=1");
+        return;
+      }
       router.push(profile.role === "admin" ? "/admin" : "/mypage");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.");
