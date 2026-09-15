@@ -36,7 +36,9 @@ export default function LoginPage() {
         router.push("/change-password?required=1");
         return;
       }
-      router.push(profile.role === "admin" ? "/admin" : "/mypage");
+      if (profile.role === "admin") router.push("/admin");
+      else if (profile.role === "staff") router.push("/admin/companies");
+      else router.push("/mypage");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다.");
     } finally {
@@ -45,7 +47,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AccountShell title="로그인" description="승인된 법인회원과 사무소 관리자가 이용할 수 있습니다.">
+    <AccountShell title="로그인" description="승인된 법인회원과 사무소 관리자·직원이 이용할 수 있습니다.">
       <form onSubmit={submit} className="grid gap-5">
         <label className="grid gap-2 text-sm font-semibold">이메일<input name="email" required type="email" className={fieldClassName} autoComplete="username" /></label>
         <label className="grid gap-2 text-sm font-semibold">비밀번호<input name="password" required type="password" className={fieldClassName} autoComplete="current-password" /></label>
