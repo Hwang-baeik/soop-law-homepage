@@ -7,6 +7,7 @@ const links = [
   ["회사관리", "/admin/companies"],
   ["기한관리", "/admin/deadlines"],
   ["탈퇴관리", "/admin/withdrawals"],
+  ["보안", "/admin/security"],
 ] as const;
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
