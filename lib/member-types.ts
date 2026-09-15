@@ -12,5 +12,5 @@ export type MemberProfile = {
   createdAt: string;
 };
 
-export const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+export const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$/;
 export const CORPORATE_NUMBER_PATTERN = /^\d{13}$/;
