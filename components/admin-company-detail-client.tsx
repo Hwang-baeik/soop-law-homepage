@@ -16,6 +16,7 @@ type Company = { id: string; name: string; corporate_registration_number: string
 export function AdminCompanyDetailClient({ companyId }: { companyId: string }) {
   const router = useRouter();
   const [company, setCompany] = useState<Company | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +30,7 @@ export function AdminCompanyDetailClient({ companyId }: { companyId: string }) {
         if (!profile || profile.status !== "approved" || !["admin", "staff"].includes(profile.role)) {
           router.replace("/mypage"); return;
         }
+        setIsAdmin(profile.role === "admin");
         const response = await rest(`companies?id=eq.${encodeURIComponent(companyId)}&select=id,name,corporate_registration_number`, session.access_token);
         if (!response.ok) throw new Error("회사정보를 불러오지 못했습니다.");
         const row = (await response.json())?.[0];
@@ -54,7 +56,7 @@ export function AdminCompanyDetailClient({ companyId }: { companyId: string }) {
         <a href="#documents" className="rounded-full border border-stone-300 px-4 py-2 font-bold">정관·주주명부·문서</a>
       </div>
 
-      <div id="office"><CompanyOfficeRecordsPanel companyId={company.id} editable /></div>
+      <div id="office"><CompanyOfficeRecordsPanel companyId={company.id} editable={isAdmin} /></div>
       <div id="management" className="mt-8"><CompanyManagementPanel companyId={company.id} /></div>
       <div id="special" className="mt-8"><CompanySpecialRecordsPanel companyId={company.id} /></div>
       <div id="registry" className="mt-8"><CompanyRegistryViewer companyId={company.id} canViewDocuments canUploadRegistry /></div>
