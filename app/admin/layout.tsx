@@ -6,6 +6,7 @@ const links = [
   ["회원-회사 연결", "/admin/access"],
   ["직원관리", "/admin/staff"],
   ["회사관리", "/admin/companies"],
+  ["Excel 일괄관리", "/admin/data"],
   ["기한관리", "/admin/deadlines"],
   ["탈퇴관리", "/admin/withdrawals"],
   ["보안", "/admin/security"],
