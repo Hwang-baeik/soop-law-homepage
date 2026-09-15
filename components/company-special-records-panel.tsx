@@ -17,11 +17,9 @@ type SpecialRecord = {
   notes: string | null;
 };
 
-function labelDate(value: string | null) {
-  return value ? value.replaceAll("-", ".") : "-";
-}
+function labelDate(value: string | null) { return value ? value.replaceAll("-", ".") : "-"; }
 
-export function CompanySpecialRecordsPanel({ companyId }: { companyId: string }) {
+export function CompanySpecialRecordsPanel({ companyId, editable = true }: { companyId: string; editable?: boolean }) {
   const [rows, setRows] = useState<SpecialRecord[]>([]);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
@@ -29,14 +27,20 @@ export function CompanySpecialRecordsPanel({ companyId }: { companyId: string })
   const load = useCallback(async () => {
     const session = getSession();
     if (!session) return;
-    const response = await rest(`company_special_records?company_id=eq.${encodeURIComponent(companyId)}&status=eq.active&select=*&order=created_at.desc`, session.access_token);
-    if (response.ok) setRows(await response.json());
+    try {
+      const response = await rest(`company_special_records?company_id=eq.${encodeURIComponent(companyId)}&status=eq.active&select=*&order=created_at.desc`, session.access_token);
+      if (!response.ok) throw new Error("특별 관리정보를 불러오지 못했습니다.");
+      setRows(await response.json());
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "특별 관리정보 조회 중 오류가 발생했습니다.");
+    }
   }, [companyId]);
 
   useEffect(() => { void load(); }, [load]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!editable) return setMessage("이 계정에는 특별 관리정보 수정 권한이 없습니다.");
     const session = getSession();
     if (!session) return;
     const form = event.currentTarget;
@@ -78,7 +82,9 @@ export function CompanySpecialRecordsPanel({ companyId }: { companyId: string })
       <h2 className="mt-1 text-xl font-extrabold">기타 특별 관리정보</h2>
       <p className="mt-2 text-sm leading-6 text-stone-500">향후 새로운 관리항목이 생겨도 별도 개발 없이 데이터로 저장할 수 있습니다. 기준일·기한·알림일이 없는 정보도 등록할 수 있습니다.</p>
       {message && <p className="mt-4 rounded-xl bg-stone-100 p-4 text-sm text-stone-700">{message}</p>}
-      <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
+      {!editable && <p className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-stone-600">이 계정은 특별 관리정보를 조회할 수 있지만 수정 권한은 없습니다.</p>}
+
+      {editable && <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="grid gap-2 text-sm font-semibold">분류<input name="category" required className={fieldClassName} placeholder="예: 주식매수선택권, 투자계약, 기타" /></label>
         <label className="grid gap-2 text-sm font-semibold">관리명<input name="title" required className={fieldClassName} /></label>
         <label className="grid gap-2 text-sm font-semibold md:col-span-2">내용<input name="valueText" className={fieldClassName} /></label>
@@ -88,7 +94,8 @@ export function CompanySpecialRecordsPanel({ companyId }: { companyId: string })
         <label className="flex items-center gap-3 rounded-xl bg-stone-50 p-4 text-sm font-semibold"><input name="visibleToClient" type="checkbox" /> 고객회사 계정에도 표시</label>
         <label className="grid gap-2 text-sm font-semibold md:col-span-2">메모<input name="notes" className={fieldClassName} /></label>
         <button disabled={working} className={`${primaryButtonClassName} md:col-span-2`}>특별 관리정보 저장</button>
-      </form>
+      </form>}
+
       <div className="mt-6 grid gap-3">
         {rows.length === 0 ? <p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 기타 특별 관리정보가 없습니다.</p> : rows.map((row) => (
           <article key={row.id} className="rounded-xl border border-stone-200 p-4 text-sm">
