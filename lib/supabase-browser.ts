@@ -56,6 +56,23 @@ export async function signUp(email: string, password: string, metadata: Record<s
   return data;
 }
 
+export async function resendSignupConfirmation(email: string) {
+  const { supabaseUrl, publishableKey } = getSupabaseConfig();
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
+  const resendUrl = redirectTo
+    ? `${supabaseUrl}/auth/v1/resend?redirect_to=${encodeURIComponent(redirectTo)}`
+    : `${supabaseUrl}/auth/v1/resend`;
+
+  const response = await fetch(resendUrl, {
+    method: "POST",
+    headers: { apikey: publishableKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "signup", email }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.msg || data.message || data.error_description || "인증메일 재발송에 실패했습니다.");
+  return data;
+}
+
 export async function signIn(email: string, password: string): Promise<AuthSession> {
   const { supabaseUrl, publishableKey } = getSupabaseConfig();
   const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
@@ -64,7 +81,13 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
     body: JSON.stringify({ email, password }),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error_description || data.msg || data.message || "로그인에 실패했습니다.");
+  if (!response.ok) {
+    const rawMessage = data.error_description || data.msg || data.message || "로그인에 실패했습니다.";
+    if (String(rawMessage).toLowerCase().includes("email not confirmed")) {
+      throw new Error("이메일 인증이 아직 완료되지 않았습니다. 가입 시 받은 인증메일의 링크를 먼저 눌러 주세요.");
+    }
+    throw new Error(rawMessage);
+  }
   return data;
 }
 
@@ -84,18 +107,30 @@ export async function updatePassword(token: string, newPassword: string) {
   return data;
 }
 
+function emitAuthChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("soop-auth-changed"));
+}
+
 export function saveSession(session: AuthSession) {
   sessionStorage.setItem("soop_session", JSON.stringify(session));
+  emitAuthChanged();
 }
 
 export function getSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
   const raw = sessionStorage.getItem("soop_session");
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthSession;
+  } catch {
+    sessionStorage.removeItem("soop_session");
+    return null;
+  }
 }
 
 export function clearSession() {
   sessionStorage.removeItem("soop_session");
+  emitAuthChanged();
 }
 
 export async function rest(path: string, token: string, init?: RequestInit) {
