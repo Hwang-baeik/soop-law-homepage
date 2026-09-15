@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 const links = [
   ["회원관리", "/admin"],
+  ["회원-회사 연결", "/admin/access"],
   ["직원관리", "/admin/staff"],
   ["회사관리", "/admin/companies"],
   ["기한관리", "/admin/deadlines"],
