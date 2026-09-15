@@ -1,0 +1,32 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AccountShell, fieldClassName, primaryButtonClassName } from "../../../components/account-shell";
+import { getSession, rest } from "../../../lib/supabase-browser";
+
+type Req={id:string;user_id:string;company_name:string;corporate_registration_number:string;relationship_note:string|null;status:string;requested_at:string};
+type Member={user_id:string;email:string;display_name:string;profile_status:string;profile_role:string};
+type Company={id:string;name:string;corporate_registration_number:string};
+
+export default function AccessAdminPage(){
+ const router=useRouter(); const [reqs,setReqs]=useState<Req[]>([]); const [members,setMembers]=useState<Member[]>([]); const [companies,setCompanies]=useState<Company[]>([]); const [message,setMessage]=useState(""); const [working,setWorking]=useState("");
+ async function load(){const s=getSession(); if(!s){router.replace("/login");return;} const [pr,rr,cr]=await Promise.all([rest(`profiles?id=eq.${s.user.id}&select=role,status`,s.access_token),rest("company_access_requests?select=id,user_id,company_name,corporate_registration_number,relationship_note,status,requested_at&order=requested_at.desc",s.access_token),rest("companies?select=id,name,corporate_registration_number&order=name.asc",s.access_token)]); const p=(await pr.json())?.[0]; if(!p||p.role!=="admin"||p.status!=="approved"){router.replace("/mypage");return;} const mr=await rest("rpc/admin_list_members",s.access_token,{method:"POST",body:"{}"}); if(!rr.ok||!cr.ok||!mr.ok){setMessage("회사 연결 관리정보를 불러오지 못했습니다.");return;} setReqs(await rr.json());setCompanies(await cr.json());setMembers(await mr.json());}
+ useEffect(()=>{void load();},[]);
+ const uniqueMembers=useMemo(()=>Array.from(new Map(members.filter(m=>m.profile_role==="client").map(m=>[m.user_id,m])).values()),[members]);
+ async function rpc(name:string,payload:Record<string,unknown>){const s=getSession();if(!s)throw new Error("로그인이 필요합니다.");const r=await rest(`rpc/${name}`,s.access_token,{method:"POST",body:JSON.stringify(payload)});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.message||"처리하지 못했습니다.");}}
+ async function review(id:string,status:"approved"|"rejected",companyId?:string){try{setWorking(id);await rpc("admin_review_company_access_request",{p_request_id:id,p_status:status,p_company_id:companyId||null,p_member_role:"manager",p_can_view_company:true,p_can_view_documents:true,p_can_upload_registry:true,p_admin_note:null});setMessage(status==="approved"?"추가 법인 연결을 승인했습니다.":"추가 요청을 거절했습니다.");await load();}catch(e){setMessage(e instanceof Error?e.message:"처리 중 오류가 발생했습니다.");}finally{setWorking("");}}
+ async function directAdd(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);try{setWorking("direct");await rpc("admin_set_company_access",{target_user:String(f.get("userId")),target_company:String(f.get("companyId")),target_member_role:String(f.get("role")||"manager"),allow_view_company:true,allow_view_documents:f.get("docs")==="on",allow_upload_registry:f.get("upload")==="on"});setMessage("회원에게 관리할 법인을 추가했습니다.");e.currentTarget.reset();await load();}catch(err){setMessage(err instanceof Error?err.message:"연결 중 오류가 발생했습니다.");}finally{setWorking("");}}
+ const pending=reqs.filter(r=>r.status==="requested");
+ return <AccountShell title="회원-회사 연결관리" description="회원의 추가법인 요청을 승인하거나 관리자가 직접 회사 접근권한을 부여합니다.">
+  {message&&<p className="mb-5 rounded-xl bg-stone-100 p-4 text-sm">{message}</p>}
+  <section className="rounded-2xl border border-stone-200 bg-white p-5"><h2 className="text-lg font-extrabold">관리자가 직접 법인 추가</h2><form onSubmit={directAdd} className="mt-4 grid gap-4 md:grid-cols-2">
+   <label className="grid gap-2 text-sm font-semibold">회원<select name="userId" required className={fieldClassName} defaultValue=""><option value="" disabled>회원 선택</option>{uniqueMembers.map(m=><option key={m.user_id} value={m.user_id}>{m.display_name||m.email} · {m.email}</option>)}</select></label>
+   <label className="grid gap-2 text-sm font-semibold">회사<select name="companyId" required className={fieldClassName} defaultValue=""><option value="" disabled>회사 선택</option>{companies.map(c=><option key={c.id} value={c.id}>{c.name} · {c.corporate_registration_number}</option>)}</select></label>
+   <label className="grid gap-2 text-sm font-semibold">회사 내 지위<select name="role" className={fieldClassName} defaultValue="manager"><option value="owner">소유주</option><option value="manager">관리권한</option><option value="member">하위 멤버</option></select></label>
+   <div className="grid gap-2 rounded-xl bg-stone-50 p-4 text-sm"><label><input name="docs" type="checkbox" defaultChecked/> 문서 조회 허용</label><label><input name="upload" type="checkbox"/> 등기부 업로드 허용</label></div>
+   <button disabled={working==="direct"} className={`${primaryButtonClassName} md:col-span-2`}>회사 연결 추가</button>
+  </form></section>
+  <section className="mt-8"><div className="flex justify-between"><h2 className="text-lg font-extrabold">추가법인 요청</h2><span className="text-sm font-bold text-stone-500">대기 {pending.length}건</span></div><div className="mt-4 grid gap-3">{pending.length?pending.map(r=>{const matched=companies.find(c=>c.corporate_registration_number===r.corporate_registration_number);const m=uniqueMembers.find(x=>x.user_id===r.user_id);return <div key={r.id} className="rounded-2xl border border-stone-200 bg-white p-5"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-bold">{r.company_name}</p><p className="mt-1 text-sm text-stone-500">{r.corporate_registration_number} · 요청자 {m?.display_name||m?.email||r.user_id}</p>{r.relationship_note&&<p className="mt-2 text-sm text-stone-600">{r.relationship_note}</p>}</div><div className="flex gap-2"><button disabled={!matched||working===r.id} onClick={()=>matched&&void review(r.id,"approved",matched.id)} className="rounded-lg bg-emerald-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">{matched?"승인":"회사등록 필요"}</button><button disabled={working===r.id} onClick={()=>void review(r.id,"rejected")} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-bold">거절</button></div></div>{!matched&&<p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">동일 법인등록번호의 회사가 아직 등록되지 않았습니다. 회사관리에서 먼저 회사를 등록한 뒤 승인해 주세요.</p>}</div>}):<p className="rounded-xl bg-stone-50 p-5 text-sm text-stone-500">현재 검토할 추가법인 요청이 없습니다.</p>}</div></section>
+ </AccountShell>;
+}
