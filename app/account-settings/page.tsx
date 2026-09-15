@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AccountShell, fieldClassName, primaryButtonClassName } from "../../components/account-shell";
-import { clearSession, getSession, rest, signIn } from "../../lib/supabase-browser";
+import { getSession, rest, signIn, signOut } from "../../lib/supabase-browser";
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function AccountSettingsPage() {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || "탈퇴 요청을 처리하지 못했습니다.");
       }
-      clearSession();
+      await signOut().catch(() => undefined);
       alert("탈퇴 요청이 접수되었습니다. 회사 접근권한은 즉시 중지되며, 보존 필요자료 확인 후 계정 개인정보가 삭제됩니다.");
       router.replace("/");
     } catch (error) {
