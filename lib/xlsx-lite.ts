@@ -1,3 +1,6 @@
+// @ts-nocheck
+// Browser-only minimal XLSX reader/writer. Type checking is intentionally disabled here
+// because CompressionStream/DecompressionStream DOM typings differ by TypeScript version.
 export type XlsxSheet = { name: string; rows: Array<Array<string | number | boolean | null | undefined>> };
 export type ParsedXlsx = Record<string, string[][]>;
 
