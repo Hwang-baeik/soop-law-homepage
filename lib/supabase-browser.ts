@@ -10,7 +10,7 @@ function getSupabaseConfig() {
   try {
     parsedUrl = new URL(rawUrl);
   } catch {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL 형식이 올바르지 않습니다. https://tgkdjywuvmamvqarcdbi.supabase.co 형태로 입력해 주세요.");
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL 형식이 올바르지 않습니다.");
   }
 
   if (parsedUrl.protocol !== "https:") {
@@ -41,7 +41,12 @@ export type SignUpResult = {
 
 export async function signUp(email: string, password: string, metadata: Record<string, string>): Promise<SignUpResult> {
   const { supabaseUrl, publishableKey } = getSupabaseConfig();
-  const response = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined;
+  const signupUrl = redirectTo
+    ? `${supabaseUrl}/auth/v1/signup?redirect_to=${encodeURIComponent(redirectTo)}`
+    : `${supabaseUrl}/auth/v1/signup`;
+
+  const response = await fetch(signupUrl, {
     method: "POST",
     headers: { apikey: publishableKey, "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, data: metadata }),
