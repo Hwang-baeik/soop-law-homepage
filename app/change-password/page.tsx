@@ -40,7 +40,6 @@ export default function ChangePasswordPage() {
     try {
       setSubmitting(true);
       setMessage("");
-
       const verifiedSession = await signIn(session.user.email, currentPassword);
       await updatePassword(verifiedSession.access_token, newPassword);
 
@@ -61,7 +60,9 @@ export default function ChangePasswordPage() {
 
       saveSession(verifiedSession);
       setMessage("비밀번호가 변경되었습니다.");
-      router.replace(profile.role === "admin" ? "/admin" : "/mypage");
+      if (profile.role === "admin") router.replace("/admin");
+      else if (profile.role === "staff") router.replace("/admin/companies");
+      else router.replace("/mypage");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "비밀번호 변경 중 오류가 발생했습니다.");
     } finally {
