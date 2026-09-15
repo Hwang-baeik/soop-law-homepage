@@ -145,3 +145,16 @@ export async function rest(path: string, token: string, init?: RequestInit) {
     },
   });
 }
+
+export async function invokeFunction(name: string, token: string, body: unknown) {
+  const { supabaseUrl, publishableKey } = getSupabaseConfig();
+  return fetch(`${supabaseUrl}/functions/v1/${name}`, {
+    method: "POST",
+    headers: {
+      apikey: publishableKey,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+}
