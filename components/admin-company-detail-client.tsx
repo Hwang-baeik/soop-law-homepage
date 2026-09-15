@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountShell } from "./account-shell";
 import { CompanyManagementPanel } from "./company-management-panel";
+import { CompanySpecialRecordsPanel } from "./company-special-records-panel";
 import { CompanyDocumentsPanel } from "./company-documents-panel";
 import { CompanyRegistryViewer } from "./company-registry-viewer";
 import { getSession, rest } from "../lib/supabase-browser";
@@ -46,11 +47,13 @@ export function AdminCompanyDetailClient({ companyId }: { companyId: string }) {
     <AccountShell title={company.name} description={`법인등록번호 ${company.corporate_registration_number} · 등기원본과 구조화된 관리정보를 함께 관리합니다.`}>
       <div className="mb-6 flex flex-wrap gap-2 text-sm">
         <a href="#management" className="rounded-full bg-emerald-900 px-4 py-2 font-bold text-white">임원·기한정보</a>
+        <a href="#special" className="rounded-full border border-stone-300 px-4 py-2 font-bold">특별 관리정보</a>
         <a href="#registry" className="rounded-full border border-stone-300 px-4 py-2 font-bold">등기부등본</a>
         <a href="#documents" className="rounded-full border border-stone-300 px-4 py-2 font-bold">정관·주주명부·문서</a>
       </div>
 
       <div id="management"><CompanyManagementPanel companyId={company.id} /></div>
+      <div id="special" className="mt-8"><CompanySpecialRecordsPanel companyId={company.id} /></div>
 
       <div id="registry" className="mt-8">
         <CompanyRegistryViewer companyId={company.id} canViewDocuments canUploadRegistry />
