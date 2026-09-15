@@ -132,9 +132,12 @@ export default function MyPage() {
         ))}
       </div>
 
-      <div className="mt-8 flex flex-wrap justify-between gap-3 border-t border-stone-200 pt-6 text-sm">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-stone-200 pt-6 text-sm">
         <p className="text-stone-500">권한이 해제되면 회사 데이터는 삭제되지 않고 이 계정에서만 보이지 않게 됩니다.</p>
-        <Link href="/change-password" className="font-semibold text-emerald-900">비밀번호 변경</Link>
+        <div className="flex flex-wrap gap-4">
+          <Link href="/change-password" className="font-semibold text-emerald-900">비밀번호 변경</Link>
+          <Link href="/account-settings" className="font-semibold text-emerald-900">계정·개인정보 관리</Link>
+        </div>
       </div>
     </AccountShell>
   );
