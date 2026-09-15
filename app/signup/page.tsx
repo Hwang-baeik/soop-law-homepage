@@ -24,7 +24,7 @@ export default function SignupPage() {
     const privacyConsent = data.get("privacyConsent") === "on";
 
     if (!CORPORATE_NUMBER_PATTERN.test(corporateNumber)) return setMessage("법인등록번호는 숫자 13자리로 입력해 주세요.");
-    if (!PASSWORD_PATTERN.test(password)) return setMessage("비밀번호는 영문, 숫자, 특수문자를 포함하여 8자리 이상이어야 합니다.");
+    if (!PASSWORD_PATTERN.test(password)) return setMessage("비밀번호는 영문, 숫자, 특수문자를 포함하여 12자리 이상이어야 합니다.");
     if (password !== passwordConfirm) return setMessage("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
     if (!privacyConsent) return setMessage("회원서비스 제공을 위한 개인정보 수집·이용에 동의해 주세요.");
 
@@ -56,7 +56,7 @@ export default function SignupPage() {
         <label className="grid gap-2 text-sm font-semibold">법인등록번호<input name="corporateNumber" required inputMode="numeric" maxLength={13} className={fieldClassName} placeholder="숫자 13자리" /></label>
         <label className="grid gap-2 text-sm font-semibold">연락처<input name="phone" required type="tel" className={fieldClassName} placeholder="010-0000-0000" /></label>
         <label className="grid gap-2 text-sm font-semibold">이메일(로그인 ID)<input name="email" required type="email" className={fieldClassName} autoComplete="email" placeholder="example@company.com" /></label>
-        <label className="grid gap-2 text-sm font-semibold">비밀번호<input name="password" required type="password" className={fieldClassName} autoComplete="new-password" placeholder="영문·숫자·특수문자 포함 8자리 이상" /></label>
+        <label className="grid gap-2 text-sm font-semibold">비밀번호<input name="password" required type="password" className={fieldClassName} autoComplete="new-password" placeholder="영문·숫자·특수문자 포함 12자리 이상" /></label>
         <label className="grid gap-2 text-sm font-semibold">비밀번호 확인<input name="passwordConfirm" required type="password" className={fieldClassName} autoComplete="new-password" placeholder="비밀번호를 한 번 더 입력해 주세요" /></label>
         <label className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm leading-6 text-stone-700">
           <input name="privacyConsent" type="checkbox" className="mt-1" required />
