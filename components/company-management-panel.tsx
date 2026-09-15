@@ -43,7 +43,7 @@ function dateLabel(value: string | null) {
   return value ? value.replaceAll("-", ".") : "미확정";
 }
 
-export function CompanyManagementPanel({ companyId }: { companyId: string }) {
+export function CompanyManagementPanel({ companyId, editable = true }: { companyId: string; editable?: boolean }) {
   const [officers, setOfficers] = useState<Officer[]>([]);
   const [termItems, setTermItems] = useState<TermItem[]>([]);
   const [position, setPosition] = useState("사내이사");
@@ -54,12 +54,17 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
   const load = useCallback(async () => {
     const session = getSession();
     if (!session) return;
-    const [officerResponse, termResponse] = await Promise.all([
-      rest(`company_officers?company_id=eq.${encodeURIComponent(companyId)}&status=neq.deleted&select=*&order=reminder_date.asc.nullslast,term_start_date.asc`, session.access_token),
-      rest(`company_term_items?company_id=eq.${encodeURIComponent(companyId)}&select=*&order=reminder_date.asc.nullslast,end_date.asc`, session.access_token),
-    ]);
-    if (officerResponse.ok) setOfficers(await officerResponse.json());
-    if (termResponse.ok) setTermItems(await termResponse.json());
+    try {
+      const [officerResponse, termResponse] = await Promise.all([
+        rest(`company_officers?company_id=eq.${encodeURIComponent(companyId)}&status=neq.deleted&select=*&order=reminder_date.asc.nullslast,term_start_date.asc`, session.access_token),
+        rest(`company_term_items?company_id=eq.${encodeURIComponent(companyId)}&select=*&order=reminder_date.asc.nullslast,end_date.asc`, session.access_token),
+      ]);
+      if (!officerResponse.ok || !termResponse.ok) throw new Error("임원·기간정보를 불러오지 못했습니다.");
+      setOfficers(await officerResponse.json());
+      setTermItems(await termResponse.json());
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "임원·기간정보 조회 중 오류가 발생했습니다.");
+    }
   }, [companyId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -71,6 +76,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
 
   async function addOfficer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!editable) return setMessage("이 계정에는 임원정보 수정 권한이 없습니다.");
     const session = getSession();
     if (!session) return;
     const form = event.currentTarget;
@@ -108,6 +114,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
 
   async function addTermItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!editable) return setMessage("이 계정에는 기간정보 수정 권한이 없습니다.");
     const session = getSession();
     if (!session) return;
     const form = event.currentTarget;
@@ -144,6 +151,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
   }
 
   async function updateStatus(table: "company_officers" | "company_term_items", id: string, status: string) {
+    if (!editable) return setMessage("이 계정에는 상태 변경 권한이 없습니다.");
     const session = getSession();
     if (!session) return;
     try {
@@ -161,9 +169,32 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
     } finally { setWorking(""); }
   }
 
+  async function setActualAgmDate(event: FormEvent<HTMLFormElement>, officerId: string) {
+    event.preventDefault();
+    if (!editable) return;
+    const session = getSession();
+    if (!session) return;
+    const date = String(new FormData(event.currentTarget).get("actualAgmDate") || "");
+    if (!date) return setMessage("실제 정기주주총회 개최일을 입력해 주세요.");
+    try {
+      setWorking(`agm-${officerId}`); setMessage("");
+      const response = await rest(`company_officers?id=eq.${encodeURIComponent(officerId)}`, session.access_token, {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ actual_regular_agm_date: date, updated_by: session.user.id }),
+      });
+      if (!response.ok) throw new Error("정기주주총회 개최일을 저장하지 못했습니다.");
+      setMessage("실제 정기주주총회 개최일을 반영해 임기말을 확정했습니다.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "정기주주총회일 저장 중 오류가 발생했습니다.");
+    } finally { setWorking(""); }
+  }
+
   return (
     <div className="grid gap-8">
       {message && <p className="rounded-xl bg-stone-100 p-4 text-sm leading-6 text-stone-700">{message}</p>}
+      {!editable && <p className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">이 계정은 임원·기간정보를 조회할 수 있지만 수정 권한은 없습니다.</p>}
 
       <section className="rounded-2xl border border-stone-200 bg-white p-5">
         <div>
@@ -172,7 +203,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
           <p className="mt-2 text-sm leading-6 text-stone-500">일반 임기는 기한월 초일 1개월 전에, 정기주주총회 종결형은 해당 정기주총 개최연도 1월 1일에 알림 대상으로 잡습니다.</p>
         </div>
 
-        <form onSubmit={addOfficer} className="mt-5 grid gap-4 md:grid-cols-2">
+        {editable && <form onSubmit={addOfficer} className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold">직책
             <select value={position} onChange={(e) => handlePosition(e.target.value)} className={fieldClassName}>
               <option>대표이사</option><option>사내이사</option><option>사외이사</option><option>기타비상무이사</option><option>감사</option><option>기타</option>
@@ -191,7 +222,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
           </label>}
           <label className="grid gap-2 text-sm font-semibold md:col-span-2">메모<input name="notes" className={fieldClassName} /></label>
           <button disabled={working === "officer"} className={`${primaryButtonClassName} md:col-span-2`}>임원정보 저장</button>
-        </form>
+        </form>}
 
         <div className="mt-6 grid gap-3">
           {officers.length === 0 ? <p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 임원이 없습니다.</p> : officers.map((officer) => (
@@ -201,7 +232,13 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
                 <span className="rounded-full bg-emerald-50 px-3 py-1 font-bold text-emerald-900">알림 {dateLabel(officer.reminder_date)}</span>
               </div>
               <p className="mt-3 text-stone-600">{officer.expires_at_regular_agm ? `정기주총 종결형 · 예상 ${officer.expected_regular_agm_month || "-"}월 · 실제 임기말 ${dateLabel(officer.calculated_term_end_date)}` : `계산 임기말 ${dateLabel(officer.calculated_term_end_date)}`}</p>
-              {officer.status === "active" && <div className="mt-3 flex gap-2"><button disabled={working === officer.id} onClick={() => void updateStatus("company_officers", officer.id, "renewed")} className="rounded-lg border border-stone-300 px-3 py-2 font-semibold">중임·갱신 처리</button><button disabled={working === officer.id} onClick={() => void updateStatus("company_officers", officer.id, "resigned")} className="rounded-lg border border-stone-300 px-3 py-2 font-semibold">퇴임 처리</button></div>}
+              {editable && officer.expires_at_regular_agm && officer.status === "active" && (
+                <form onSubmit={(event) => void setActualAgmDate(event, officer.id)} className="mt-3 flex flex-wrap items-end gap-2 rounded-lg bg-stone-50 p-3">
+                  <label className="grid gap-1 text-xs font-semibold">실제 정기주주총회일<input name="actualAgmDate" type="date" defaultValue={officer.actual_regular_agm_date || ""} className="h-9 rounded-lg border border-stone-300 bg-white px-2 text-sm" /></label>
+                  <button disabled={working === `agm-${officer.id}`} className="h-9 rounded-lg border border-stone-300 bg-white px-3 text-xs font-bold">임기말 확정</button>
+                </form>
+              )}
+              {editable && officer.status === "active" && <div className="mt-3 flex gap-2"><button disabled={working === officer.id} onClick={() => void updateStatus("company_officers", officer.id, "renewed")} className="rounded-lg border border-stone-300 px-3 py-2 font-semibold">중임·갱신 처리</button><button disabled={working === officer.id} onClick={() => void updateStatus("company_officers", officer.id, "resigned")} className="rounded-lg border border-stone-300 px-3 py-2 font-semibold">퇴임 처리</button></div>}
             </article>
           ))}
         </div>
@@ -211,7 +248,7 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
         <p className="text-xs font-bold tracking-[0.16em] text-emerald-800">TERM DATA</p>
         <h2 className="mt-1 text-xl font-extrabold">전환사채·전환주식·상환주식 등 기간관리</h2>
         <p className="mt-2 text-sm leading-6 text-stone-500">기간 말일과 사전 알림시점을 구조화하여 저장합니다. 기간 경과 후 말소등기가 필요한 항목인지도 함께 관리합니다.</p>
-        <form onSubmit={addTermItem} className="mt-5 grid gap-4 md:grid-cols-2">
+        {editable && <form onSubmit={addTermItem} className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold">종류<select name="itemType" className={fieldClassName} defaultValue="convertible_bond"><option value="convertible_bond">전환사채</option><option value="convertible_share">전환주식</option><option value="redeemable_share">상환주식</option><option value="other">기타</option></select></label>
           <label className="grid gap-2 text-sm font-semibold">관리명<input name="title" required className={fieldClassName} placeholder="예: 제1회 전환사채 전환기간" /></label>
           <label className="grid gap-2 text-sm font-semibold">기간 시작일<input name="startDate" type="date" className={fieldClassName} /></label>
@@ -220,13 +257,13 @@ export function CompanyManagementPanel({ companyId }: { companyId: string }) {
           <label className="flex items-center gap-3 rounded-xl bg-stone-50 p-4 text-sm font-semibold"><input name="requiresCancellation" type="checkbox" defaultChecked /> 기간 경과 후 말소등기 확인 필요</label>
           <label className="grid gap-2 text-sm font-semibold md:col-span-2">메모<input name="notes" className={fieldClassName} /></label>
           <button disabled={working === "term"} className={`${primaryButtonClassName} md:col-span-2`}>기간정보 저장</button>
-        </form>
+        </form>}
 
         <div className="mt-6 grid gap-3">
           {termItems.length === 0 ? <p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 기간정보가 없습니다.</p> : termItems.map((item) => (
             <article key={item.id} className="rounded-xl border border-stone-200 p-4 text-sm">
               <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-extrabold">{itemLabel(item.item_type)} · {item.title}</p><p className="mt-1 text-stone-600">말일 {dateLabel(item.end_date)} {item.requires_cancellation_registration ? "· 말소등기 확인 필요" : ""}</p></div><span className="rounded-full bg-amber-50 px-3 py-1 font-bold text-amber-900">알림 {dateLabel(item.reminder_date)}</span></div>
-              {item.status === "active" && <button disabled={working === item.id} onClick={() => void updateStatus("company_term_items", item.id, "completed")} className="mt-3 rounded-lg border border-stone-300 px-3 py-2 font-semibold">처리완료</button>}
+              {editable && item.status === "active" && <button disabled={working === item.id} onClick={() => void updateStatus("company_term_items", item.id, "completed")} className="mt-3 rounded-lg border border-stone-300 px-3 py-2 font-semibold">처리완료</button>}
             </article>
           ))}
         </div>
