@@ -11,6 +11,7 @@ const adminLinks = [
   ["회원-회사 연결", "/admin/access"],
   ["직원관리", "/admin/staff"],
   ["회사관리", "/admin/companies"],
+  ["견적서 자동작성", "/admin/estimates"],
   ["Excel 일괄관리", "/admin/data"],
   ["기한관리", "/admin/deadlines"],
   ["탈퇴관리", "/admin/withdrawals"],
@@ -48,6 +49,7 @@ export function AdminNav() {
     : role === "staff" && staffPermission?.is_active
       ? ([
           ["회사관리", "/admin/companies"],
+          ["견적서 자동작성", "/admin/estimates"],
           ...(staffPermission.can_manage_deadlines ? [["기한관리", "/admin/deadlines"]] as const : []),
         ] as const)
       : [];
