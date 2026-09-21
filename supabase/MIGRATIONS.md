@@ -33,6 +33,7 @@
 27. `20260915060354_index_company_management_queries`
 28. `internal_estimate_queue`
 29. `restrict_estimate_browser_updates`
+30. `estimate_rpc_and_permission_hardening`
 
 ## 운영 원칙
 
