@@ -190,18 +190,14 @@ export default function EstimateAdminPage() {
     try {
       setWorking("create");
       setMessage("");
-      const response = await rest("estimate_jobs", session.access_token, {
+      const response = await rest("rpc/internal_create_estimate", session.access_token, {
         method: "POST",
-        headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          admin_user_id: adminUserId,
-          company_id: companyId || null,
-          work_type: workType,
-          title: normalizedTitle,
-          client_name: normalizedClient,
-          input_data: inputData,
-          status: "pending",
-          created_by: session.user.id,
+          p_company_id: companyId || null,
+          p_work_type: workType,
+          p_title: normalizedTitle,
+          p_client_name: normalizedClient,
+          p_input_data: inputData,
         }),
       });
 
@@ -230,9 +226,9 @@ export default function EstimateAdminPage() {
     try {
       setWorking(job.id);
       setMessage("");
-      const response = await rest(`estimate_jobs?id=eq.${job.id}`, session.access_token, {
-        method: "PATCH",
-        body: JSON.stringify({ status, updated_at: new Date().toISOString() }),
+      const response = await rest("rpc/internal_set_estimate_request_status", session.access_token, {
+        method: "POST",
+        body: JSON.stringify({ p_job_id: job.id, p_status: status }),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
