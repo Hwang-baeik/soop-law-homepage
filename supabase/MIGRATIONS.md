@@ -31,6 +31,8 @@
 25. `20260915055902_require_email_confirmation_before_client_approval`
 26. `20260915060008_enforce_approved_identity_in_all_company_rls`
 27. `20260915060354_index_company_management_queries`
+28. `internal_estimate_queue`
+29. `restrict_estimate_browser_updates`
 
 ## 운영 원칙
 
@@ -41,3 +43,5 @@
 - 고객 회사 데이터 조회는 `approved client`와 활성 `company_members` 권한을 모두 만족해야 합니다.
 - 직원 조회/수정은 `approved staff`, 전역 직원권한, 회사별 assignment를 모두 만족해야 합니다.
 - Private Storage `company-documents`의 파일 접근은 Storage RLS와 문서 메타데이터 권한을 함께 확인합니다.
+- 견적서는 `estimate_jobs` 큐에 저장하며 관리자와 해당 관리자에 연결된 활성 직원만 접근합니다.
+- 견적 결과 파일은 private Storage `estimate-files`에 `<admin_user_id>/<estimate_job_id>/...` 경로로 저장합니다.
