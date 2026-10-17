@@ -36,9 +36,12 @@
 
 ### 회원 시스템 (운영 병합 전 필수)
 
-- Supabase 프로젝트 soop-law-homepage (fsoywupylioyzxftdlgm)는 프로젝트 목록상 INACTIVE로 표시됨.
-- 읽기 전용 연결 시험 `select now()`가 연결 시간 초과로 실패. 인스턴스 가동상태를 확인하고 복구한 뒤 검증 필요.
-- Security Advisor는 lints=[]를 반환했으나 위 연결 실패가 있으므로 실제 접근권한 정상 또는 보안 검증 완료를 뜻하지 않음.
+- 최초 점검 시 Supabase 프로젝트 soop-law-homepage (fsoywupylioyzxftdlgm)가 INACTIVE였고 읽기 전용 연결 시험이 시간 초과로 실패함.
+- 기존 프로젝트 재가동을 요청하여 COMING_UP → RESTORING → ACTIVE_HEALTHY까지 확인. 기본 SQL 연결 및 테이블/보관함 메타데이터 조회가 성공함.
+- public 테이블 16개 모두 RLS 활성화, 각 테이블에 정책 존재 확인. company-documents와 estimate-files 버킷은 모두 public=false. 실제 타 회사 접근 차단은 계정별 검증이 별도로 필요함.
+- 중지 상태에서 반환된 lints=[]는 유효한 보안 검증으로 간주하지 않음. 정상 복원 후 다시 실행한 Security Advisor에는 아래 경고가 있음.
+  - 로그인 사용자 실행이 허용된 public SECURITY DEFINER 함수 16개. 익명 사용자 EXECUTE는 모두 차단되어 있고 관리자 RPC의 시작 부분에는 is_approved_admin 검사, 기타 RPC에는 사용자/역할 확인이 있음. 함수 전체와 실제 계정별 접근 검증 없이 취약점 또는 안전으로 단정하지 않음. 경고 제거만을 위해 EXECUTE를 일괄 차단하면 기존 회원 기능이 깨질 수 있으므로 변경하지 않음. [검토 기준](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
+  - 유출 비밀번호 차단 기능 꺼짐. 요금제 지원 여부 및 로그인 영향 확인 후 설정할 것. 요금제 변경은 하지 않음. [설정 안내](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
 - 클라이언트의 로그인 화면 분기/세션 존재 여부는 DB의 RLS를 대체하지 않음. 실제 DB에 적용된 정책을 기준으로 확인해야 함.
 - 관리자, 직원, 승인 고객, 미승인 고객, 회사 미연결 회원 계정으로 교차 회사 조회/수정/문서 다운로드 차단을 검증할 필요가 있음.
 - 이메일 확인, 승인 후 로그인, 세션 갱신, MFA, 비밀번호 재설정, 탈퇴 후 기존 토큰, 문서 업로드/교체, 엑셀 왕복, 임기 알림 수신을 실제 환경에서 확인할 필요가 있음.
@@ -50,3 +53,13 @@
 - Resend 실제 메일 수신은 테스트하지 않음. 운영 관리자 수신함에서 별도 수신 검증 필요.
 - 전송 API에 분산 환경의 스팸/빈도 제한은 아직 없음. Vercel 방화벽 또는 영속 저장소 기반 제한을 설정할 때 배포 환경과 정상 상담 빈도를 함께 고려할 것.
 - 개인정보 처리방침의 실제 메일 수탁/보관/파기 운영과 게시글의 현행 법령·판례 내용은 별도 실무 검토 대상. 이번 변경은 새 법률 해석을 추가하지 않음.
+
+## 배포 및 후속 확인
+
+- PR #4 병합 완료: https://github.com/Hwang-baeik/soop-law-homepage/pull/4
+- 기능 수정 운영 커밋: 35243e5bd23866bed228f4a57815fba94cefe0db
+- Vercel 운영 배포 dpl_3cRGAXzVBaAkpCBfZjeVCzbPuMeA: READY 및 sooplaw.com 별칭 연결 확인.
+- 운영 도메인의 검색 빈 결과 요청에서 HTTP 200, 한국어 문서, 새 빈 결과 문구 확인.
+- 미리보기 배포에서도 검색 빈 결과 및 category=전체에서 글 8개와 현재 분류 표시를 확인.
+- 배포 후 해당 운영 배포의 최근 10분 error/fatal 로그 조회 결과 없음.
+- 회원 개발본의 비밀번호 변경은 기존 비밀번호와 로그인을 요구함. 비밀번호를 잊은 사용자를 위한 별도 복구 흐름은 후속 구현/검증 필요.
