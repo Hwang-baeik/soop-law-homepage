@@ -1,7 +1,5 @@
-"use client";
-
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import Image from "next/image";
+import { ConsultationForm } from "../components/consultation-form";
 import {
   Building2,
   FileText,
@@ -15,7 +13,6 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
 import Link from "next/link";
 
 
@@ -30,6 +27,12 @@ const office = {
 };
 
 const services = [
+  {
+    icon: MapPin,
+    title: "부동산·상속등기",
+    href: "#consultation",
+    desc: "소유권이전, 상속등기, 담보권 설정·말소 등 상담",
+  },
   {
     icon: Building2,
     title: "법인등기",
@@ -64,31 +67,11 @@ const process = [
   "접수·보정 대응·완료 보고",
 ];
 
-const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니다)는 개인정보 보호법 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
-
-제1조 (개인정보의 처리목적)
-사무소는 상담 신청 접수, 의뢰 내용 확인, 상담 일정 조율, 사건 검토 및 고충 처리를 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 위 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보보호법 등 관계 법령에 따라 필요한 조치를 이행합니다.
-
-제2조 (처리하는 개인정보 항목)
-사무소는 상담 신청 과정에서 회사명, 담당자명, 직무, 직급·직책, 회사 이메일, 전화번호, 요청내용, 직원 수, 업종, 매출액 등 상담에 필요한 정보를 처리할 수 있습니다.
-
-제3조 (개인정보의 처리 및 보유기간)
-상담 신청을 통해 수집된 개인정보는 상담 및 사건 검토 목적 달성 시까지 보유·이용하며, 관계 법령에 따라 보존할 필요가 있는 경우에는 해당 법령에서 정한 기간 동안 보관합니다.
-
-제4조 (개인정보의 제3자 제공)
-사무소는 정보주체의 동의가 있거나 법률에 특별한 규정이 있는 경우를 제외하고 개인정보를 제3자에게 제공하지 않습니다.
-
-제5조 (정보주체의 권리)
-정보주체는 사무소에 대해 개인정보 열람, 정정, 삭제, 처리정지를 요구할 수 있으며, 사무소는 관계 법령에 따라 지체 없이 조치합니다.
-
-제6조 (개인정보 보호책임자)
-개인정보 보호 및 관련 문의는 숲 법무사 사무소로 연락하실 수 있습니다.
-전화: 02-6956-8683
-이메일: soop@sooplaw.com`;
-
 function LogoMark({ compact = false }: { compact?: boolean }) {
   return (
-    <img
+    <Image
+      width={compact ? 138 : 608}
+      height={compact ? 133 : 137}
       src={compact ? "/soop-logo-mark.png" : "/soop-logo-horizontal.png"}
       alt="숲 법무사사무소 로고"
       className={compact ? "h-12 w-auto" : "h-10 w-auto sm:h-12 md:h-14"}
@@ -96,177 +79,14 @@ function LogoMark({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function ConsultationForm() {
-  const [form, setForm] = useState({
-    email: "",
-    nameOrCompany: "",
-    category: "",
-    message: "",
-    agree: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState("");
-
-  const updateField = (key: keyof typeof form, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!form.agree) {
-      setSubmitMessage("개인정보 수집 및 이용에 동의해 주세요.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setSubmitMessage("");
-
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        throw new Error("상담 신청 전송에 실패했습니다.");
-      }
-
-      setSubmitMessage("상담 신청이 정상적으로 접수되었습니다.");
-      setForm({
-        email: "",
-        nameOrCompany: "",
-        category: "",
-        message: "",
-        agree: false,
-      });
-    } catch {
-      setSubmitMessage("전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-10 grid gap-5 rounded-[2rem] border border-stone-200 bg-white p-6 shadow-sm md:p-8"
-    >
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        메일주소 <span className="text-red-600">*</span>
-        <input
-          required
-          type="email"
-          value={form.email}
-          onChange={(e) => updateField("email", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-          placeholder="example@domain.com"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        성명(법인명) <span className="text-red-600">*</span>
-        <input
-          required
-          value={form.nameOrCompany}
-          onChange={(e) => updateField("nameOrCompany", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-          placeholder="성명 또는 법인명을 입력해 주세요"
-        />
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        업무 분류 <span className="text-red-600">*</span>
-        <select
-          required
-          value={form.category}
-          onChange={(e) => updateField("category", e.target.value)}
-          className="h-11 rounded-xl border border-stone-300 px-4 outline-none focus:border-emerald-800"
-        >
-          <option value="">선택</option>
-          <option>법인등기</option>
-          <option>부동산등기</option>
-          <option>법원 서류</option>
-          <option>고소장</option>
-          <option>기타</option>
-        </select>
-      </label>
-
-      <label className="grid gap-2 text-sm font-semibold text-stone-700">
-        문의 내용 <span className="text-red-600">*</span>
-        <textarea
-          required
-          value={form.message}
-          onChange={(e) => updateField("message", e.target.value)}
-          rows={8}
-          className="rounded-xl border border-stone-300 px-4 py-3 outline-none focus:border-emerald-800"
-          placeholder="문의해주실 내용을 입력해 주세요"
-        />
-      </label>
-
-      <div className="max-h-48 overflow-y-auto rounded-2xl bg-stone-50 p-5 text-sm leading-7 text-stone-700">
-        {privacyPolicy.split("\n").map((line, index) => (
-          <p key={index} 
-          className={
-            line.startsWith("제") 
-              ? "mt-4 font-bold" 
-              : ""
-          }>
-            {line || " "}
-          </p>
-        ))}
-      </div>
-
-      <label className="flex items-center justify-center gap-2 text-sm text-stone-700">
-        <input
-          type="checkbox"
-          checked={form.agree}
-          onChange={(e) => updateField("agree", e.target.checked)}
-        />
-        개인정보 수집 및 이용에 동의합니다.
-      </label>
-
-      <button
-        type="submit"
-        disabled={!form.agree || isSubmitting}
-        className="h-12 rounded-full bg-emerald-900 text-base font-semibold text-white transition hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
-      >
-        {isSubmitting ? "전송 중..." : "상담 제출"}
-      </button>
-
-      {submitMessage && (
-        <p className="text-center text-sm font-medium text-stone-700">{submitMessage}</p>
-      )}
-    </form>
-  );
-}
-
 export default function SoopLawOfficeHomepage() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
-      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <LogoMark />
-          <nav className="hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex">
-            <a href="#services" className="hover:text-stone-950">업무분야</a>
-            <a href="#strength" className="hover:text-stone-950">강점</a>
-            <a href="#process" className="hover:text-stone-950">진행절차</a>
-            <a href="#contact" className="hover:text-stone-950">상담안내</a>
-          </nav>
-          <Button className="rounded-full bg-emerald-900 px-5 hover:bg-emerald-950">
-            상담 문의
-          </Button>
-        </div>
-      </header>
-
-      <main>
+      <main id="main-content">
         <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-50 via-white to-emerald-50">
           <div className="pointer-events-none absolute right-[-8rem] top-[-8rem] hidden h-80 w-80 rounded-full bg-emerald-100/60 blur-3xl md:block" />
           <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 py-14 md:grid-cols-[1.05fr_0.95fr] md:py-32">
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div>
               <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white px-5 py-4 shadow-sm md:px-6 md:py-5">
                 <LogoMark />
               </div>
@@ -289,13 +109,13 @@ export default function SoopLawOfficeHomepage() {
                 >
                   전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
-                <Button variant="outline" className="h-12 rounded-full border-stone-300 px-7 text-base">
+                <a href="#services" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-base font-semibold hover:bg-stone-100">
                   업무분야 보기
-                </Button>
+                </a>
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.1 }}>
+            <div>
               <Card className="rounded-[2rem] border-stone-200 bg-white/90 shadow-xl">
                 <CardContent className="p-8">
                   <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white">
@@ -316,7 +136,7 @@ export default function SoopLawOfficeHomepage() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -432,7 +252,7 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
-        <section className="border-y border-stone-200 bg-white py-20">
+        <section id="location" className="border-y border-stone-200 bg-white py-20">
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-10 max-w-2xl">
               <p className="font-semibold text-emerald-900">Location</p>
@@ -444,7 +264,10 @@ export default function SoopLawOfficeHomepage() {
 
             <div className="grid items-center gap-8 rounded-[2rem] border border-stone-200 bg-white p-5 shadow-sm md:grid-cols-[1fr_2fr]">
               <div className="overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 shadow-sm">
-                <img
+                <Image
+                  width={654}
+                  height={682}
+                  sizes="(min-width: 768px) 33vw, 100vw"
                   src="/soop-office-map.PNG"
                   alt="숲 법무사 사무소 위치 지도"
                   className="h-auto w-full object-contain"
@@ -524,7 +347,7 @@ export default function SoopLawOfficeHomepage() {
                 <div className="mt-6 space-y-4 text-sm">
                   <div className="flex gap-3">
                     <Phone className="h-5 w-5 text-emerald-900" />
-                    <span className="font-semibold">{office.phone}</span>
+                    <a href={`tel:${office.phone}`} className="font-semibold underline underline-offset-4">{office.phone}</a>
                   </div>
                   <div className="flex gap-3">
                     <MapPin className="h-5 w-5 text-emerald-900" />
@@ -532,7 +355,7 @@ export default function SoopLawOfficeHomepage() {
                   </div>
                   <div className="flex gap-3">
                     <FileText className="h-5 w-5 text-emerald-900" />
-                    <span>{office.email}</span>
+                    <a href={`mailto:${office.email}`} className="break-all underline underline-offset-4">{office.email}</a>
                   </div>
                 </div>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -565,8 +388,8 @@ export default function SoopLawOfficeHomepage() {
               <div>대표 법무사: 황배익 · 김지안</div>
               <div>사업자등록번호: {office.businessNumber}</div>
               <div>주소: {office.address}</div>
-              <div>전화: {office.phone}</div>
-              <div>이메일: {office.email}</div>
+              <div>전화: <a href={`tel:${office.phone}`} className="underline underline-offset-4">{office.phone}</a></div>
+              <div>이메일: <a href={`mailto:${office.email}`} className="underline underline-offset-4">{office.email}</a></div>
               <div>
                 카카오톡 매장톡: <a href={office.kakao} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-white">바로가기</a>
               </div>

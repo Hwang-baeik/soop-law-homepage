@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { posts } from "../../../lib/posts";
 
@@ -148,6 +149,7 @@ export async function generateMetadata(
     title: `${post.title} | 숲 법무사 사무소`,
     description: post.description,
     keywords: post.tags,
+    alternates: { canonical: `/board/${post.slug}` },
     openGraph: {
       title: post.title,
       description: post.description,
@@ -172,8 +174,13 @@ export default async function PostDetailPage(
   const sections = parsePostSections(post.content);
 
   return (
-    <main className="min-h-screen bg-stone-50 px-6 py-16 text-stone-900">
+    <main id="main-content" className="min-h-screen bg-stone-50 px-6 py-16 text-stone-900">
       <article className="mx-auto max-w-4xl">
+        <nav aria-label="현재 위치" className="mb-8 flex flex-wrap gap-4 text-sm font-semibold text-emerald-900">
+          <Link href="/">홈</Link>
+          <Link href="/board">실무 자료실</Link>
+          <Link href={`/board?category=${encodeURIComponent(post.category)}`}>{post.category}</Link>
+        </nav>
         <header className="border-b border-stone-200 pb-8">
           <p className="text-sm font-semibold text-emerald-900">
             {post.category}
@@ -264,6 +271,10 @@ export default async function PostDetailPage(
               </div>
             </section>
           ))}
+        </div>
+        <div className="mt-10 flex flex-wrap gap-4">
+          <Link href="/board" className="rounded-full border border-stone-300 px-6 py-3 text-sm font-semibold">자료실 목록</Link>
+          <Link href="/#consultation" className="rounded-full bg-emerald-900 px-6 py-3 text-sm font-semibold text-white">이 업무 상담하기</Link>
         </div>
       </article>
     </main>

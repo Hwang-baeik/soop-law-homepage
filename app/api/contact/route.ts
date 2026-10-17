@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { validateContact } from "../../../lib/contact";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-type ContactFormData = {
-  email?: string;
-  nameOrCompany?: string;
-  category?: string;
-  message?: string;
-  agree?: boolean;
-};
-
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 
 function escapeHtml(value: string) {
   return value
@@ -27,45 +16,43 @@ function escapeHtml(value: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+      return NextResponse.json({ message: "지원하지 않는 요청 형식입니다." }, { status: 415 });
+    }
+    // Read with an actual byte limit, including requests without Content-Length.
+    const reader = request.body?.getReader();
+    if (!reader) return NextResponse.json({ message: "신청 내용이 비어 있습니다." }, { status: 400 });
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 32_768) {
+        await reader.cancel();
+        return NextResponse.json({ message: "입력 내용이 너무 깁니다." }, { status: 413 });
+      }
+      chunks.push(value);
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    } catch {
+      return NextResponse.json({ message: "상담 신청 내용을 확인해 주세요." }, { status: 400 });
+    }
+    const validated = validateContact(body);
+    if (validated.error) return NextResponse.json({ message: validated.error }, { status: 400 });
+    const { email, nameOrCompany, category, message } = validated.data;
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
-        { message: "RESEND_API_KEY 환경변수가 설정되지 않았습니다." },
-        { status: 500 }
+        { message: "현재 온라인 접수를 이용할 수 없습니다. 전화 02-6956-8683 또는 soop@sooplaw.com으로 문의해 주세요." },
+        { status: 503 }
       );
     }
 
     const resend = new Resend(apiKey);
-
-    const body = (await request.json()) as ContactFormData;
-
-    const email = body.email?.trim() ?? "";
-    const nameOrCompany = body.nameOrCompany?.trim() ?? "";
-    const category = body.category?.trim() ?? "";
-    const message = body.message?.trim() ?? "";
-    const agree = body.agree === true;
-
-    if (!email || !nameOrCompany || !category || !message) {
-      return NextResponse.json(
-        { message: "필수 입력값이 누락되었습니다." },
-        { status: 400 }
-      );
-    }
-
-    if (!isValidEmail(email)) {
-      return NextResponse.json(
-        { message: "메일주소 형식이 올바르지 않습니다." },
-        { status: 400 }
-      );
-    }
-
-    if (!agree) {
-      return NextResponse.json(
-        { message: "개인정보 수집 및 이용 동의가 필요합니다." },
-        { status: 400 }
-      );
-    }
 
     const subject = `[홈페이지문의]_${nameOrCompany}_${category}`;
 
@@ -104,7 +91,7 @@ ${message}
     });
 
     if (error) {
-      console.error("Resend error:", error);
+      console.error("Contact mail delivery failed:", error.name);
       return NextResponse.json(
         { message: "메일 발송에 실패했습니다." },
         { status: 500 }
