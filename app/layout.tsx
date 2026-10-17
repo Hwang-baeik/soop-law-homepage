@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { PublicHeader } from "../components/public-header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sooplaw.com"),
   title: "숲 법무사 사무소",
-  description: "숲 법무사 사무소에 오신것을 환영합니다.",
+  description: "서울 성동구 성수역 인근 숲 법무사 사무소. 법인등기, 부동산등기, 상속절차 및 민사서류 업무의 필요서류·비용·일정을 안내합니다.",
     
     verification: {
     google: "kEDBgoWg7GpUDbUjWnLofF2Cy4A4Qg3onmY4TpGtINY",
@@ -40,10 +42,10 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><PublicHeader />{children}</body>
     </html>
   );
 }
