@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/admin", "/mypage", "/account-settings", "/change-password"],
     },
 
     sitemap: "https://sooplaw.com/sitemap.xml",
