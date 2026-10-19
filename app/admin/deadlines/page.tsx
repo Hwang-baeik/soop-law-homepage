@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountShell } from "../../../components/account-shell";
 import { getSession, rest } from "../../../lib/supabase-browser";
+import { seoulToday } from "../../../lib/term-notices";
 
 type Deadline={source_type:"officer"|"term_item";source_id:string;company_id:string;company_name:string;category:string;title:string;person_name:string|null;target_date:string|null;reminder_date:string|null;status:string;details:Record<string,unknown>};
 const dayMs=86400000;
@@ -15,10 +16,11 @@ function urgency(row:Deadline,today:string){const target=daysUntil(row.target_da
 export default function DeadlineAdminPage(){
  const router=useRouter();const[rows,setRows]=useState<Deadline[]>([]);const[message,setMessage]=useState("");const[loading,setLoading]=useState(true);
  useEffect(()=>{const load=async()=>{const s=getSession();if(!s){router.replace("/login");return;}try{const pr=await rest(`profiles?id=eq.${s.user.id}&select=role,status`,s.access_token);const p=(await pr.json())?.[0];if(!p||p.status!=="approved"||!["admin","staff"].includes(p.role)){router.replace("/mypage");return;}const r=await rest("rpc/list_upcoming_company_deadlines",s.access_token,{method:"POST",body:"{}"});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||"기한정보를 불러오지 못했습니다.");}setRows(await r.json());}catch(e){setMessage(e instanceof Error?e.message:"기한정보 조회 중 오류가 발생했습니다.");}finally{setLoading(false);}};void load();},[router]);
- const today=new Date().toISOString().slice(0,10);
+ const today=seoulToday();
  const sorted=useMemo(()=>[...rows].sort((a,b)=>(a.target_date||"9999-12-31").localeCompare(b.target_date||"9999-12-31")),[rows]);
  const summary=useMemo(()=>({overdue:rows.filter(r=>{const d=daysUntil(r.target_date,today);return d!==null&&d<0;}).length,action:rows.filter(r=>{const rd=daysUntil(r.reminder_date,today);const td=daysUntil(r.target_date,today);return !(td!==null&&td<0)&&rd!==null&&rd<=0;}).length,d30:rows.filter(r=>{const d=daysUntil(r.target_date,today);return d!==null&&d>=0&&d<=30;}).length,d90:rows.filter(r=>{const d=daysUntil(r.target_date,today);return d!==null&&d>30&&d<=90;}).length}),[rows,today]);
  return <AccountShell title="기한관리" description="임원 임기·전환사채·전환주식·상환주식 등 기간관리 데이터를 가까운 순서로 통합 조회합니다.">
+  <Link href="/admin/term-notices" className="mb-5 inline-flex rounded-xl bg-emerald-900 px-5 py-3 text-sm font-semibold text-white">45일 이내 임기 만료 법인 · 안내 메일 작성</Link>
   {message&&<p className="mb-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{message}</p>}
   {loading?<p className="text-sm text-stone-500">기한정보를 불러오는 중입니다.</p>:<>
    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div className="rounded-2xl border border-red-200 bg-red-50 p-5"><p className="text-xs font-bold text-red-800">기한 경과</p><p className="mt-2 text-3xl font-black text-red-950">{summary.overdue}</p></div><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p className="text-xs font-bold text-amber-800">준비 알림 도래</p><p className="mt-2 text-3xl font-black text-amber-950">{summary.action}</p></div><div className="rounded-2xl border border-stone-200 bg-white p-5"><p className="text-xs font-bold text-stone-500">30일 이내</p><p className="mt-2 text-3xl font-black">{summary.d30}</p></div><div className="rounded-2xl border border-stone-200 bg-white p-5"><p className="text-xs font-bold text-stone-500">31~90일</p><p className="mt-2 text-3xl font-black">{summary.d90}</p></div></div>
