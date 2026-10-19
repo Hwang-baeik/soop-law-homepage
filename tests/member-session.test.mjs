@@ -111,3 +111,11 @@ test('login returns session and translates unconfirmed email error', async () =>
   globalThis.fetch=async()=>Response.json({message:'Email not confirmed'},{status:400});
   await assert.rejects(auth.signIn('test@example.invalid','unused'),/이메일 인증/);
 });
+test('loads MFA factors from GET user instead of unsupported GET factors', async () => {
+  globalThis.fetch=async(url)=>{
+    assert.equal(new URL(url).pathname,'/auth/v1/user');
+    return Response.json({id:'test-user',factors:[{id:'totp-factor',status:'verified',factor_type:'totp'}]});
+  };
+  const factors=await auth.listMfaFactors('valid-token');
+  assert.equal(factors[0].id,'totp-factor');
+});

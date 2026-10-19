@@ -206,11 +206,9 @@ async function authRequest(path: string, token: string, init?: RequestInit) {
 }
 
 export async function listMfaFactors(token: string): Promise<MfaFactor[]> {
-  const data = await authRequest("factors", token);
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.all)) return data.all;
-  if (Array.isArray(data?.totp)) return data.totp;
-  return [];
+  // Auth exposes a user's factors on GET /user; /factors only supports enrollment.
+  const data = await authRequest("user", token);
+  return Array.isArray(data?.factors) ? data.factors : [];
 }
 
 export async function enrollTotp(token: string) {

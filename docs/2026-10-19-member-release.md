@@ -18,16 +18,18 @@
 3. 실제 데이터 권한은 DB RLS에서 별도로 검사한다. 화면의 로그인 상태만으로 회사자료를 허용하지 않는다.
 4. 손상된 저장 세션은 폐기하고, 로그아웃 뒤 늦게 끝난 갱신 요청이 세션을 복원하지 못하도록 수정한다.
 5. 내부 화면의 검색 색인을 차단하고 환경변수 예시를 실제 코드의 publishable key 이름과 맞춘다.
+6. 실제 인증 API에서 GET /factors가 405를 반환하는 기존 오류를 수정. MFA 목록은 GET /user 응답의 factors로 확인한다.
 
 ## 배포 전 검증
 
 - npm run build: 성공. TypeScript 검사 및 32개 정적 경로 생성 포함.
-- node --test tests/contact.test.mjs tests/member-session.test.mjs: 41개 통과.
+- node --test tests/contact.test.mjs tests/member-session.test.mjs: 42개 통과.
 - tests/member-access.sql: 운영 DB의 실제 RLS를 anon/authenticated 역할로 검증하는 19개 assertion 통과.
 - DB 검증은 합성 회원/회사/문서 메타데이터를 생성하고 내부 subtransaction에서 모두 rollback한다. 기존 운영 계정으로 로그인하거나 비밀번호를 변경하지 않는다.
 - 승인 고객은 연결된 회사·임원·문서 메타데이터만 조회한다. 미승인/정지 회원은 조회하지 못한다. 일반 고객의 회사 수정 및 관리자 RPC 호출은 차단된다.
 - 직원은 배정된 회사만 조회하고, 허용된 특별관리 자료만 수정한다. 회사명·법인등록번호 변경은 관리자 권한이다.
 - 회사 440개, 임원 695건 및 공개 회사 수 440개 확인. 기존 자료를 운영 배포 때문에 재등록하지 않는다.
+- Vercel 미리보기 배포 성공. 브라우저에서 공통 메뉴의 로그인 연결, 로그인 양식, 비로그인 관리자 경로의 로그인 화면 이동을 확인한다.
 
 ## 운영 설정
 
