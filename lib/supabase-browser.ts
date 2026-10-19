@@ -241,6 +241,12 @@ export async function rest(path: string, token: string, init?: RequestInit) {
   );
 }
 
+export async function termNoticeRequest(init?: RequestInit) {
+  const session = getSession();
+  if (!session) throw new Error("다시 로그인해 주세요.");
+  return retryAfterUnauthorized("/api/term-notices", session.access_token, init || {}, { "Content-Type": "application/json" });
+}
+
 export async function publicRest(path: string, init?: RequestInit) {
   const { supabaseUrl, publishableKey } = getSupabaseConfig();
   return fetch(`${supabaseUrl}/rest/v1/${path}`, { ...init, headers: { apikey: publishableKey, "Content-Type": "application/json", ...(init?.headers || {}) } });

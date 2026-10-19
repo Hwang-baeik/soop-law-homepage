@@ -34,6 +34,7 @@
 28. `internal_estimate_queue`
 29. `restrict_estimate_browser_updates`
 30. `estimate_rpc_and_permission_hardening`
+31. `fix_deadline_overview_ordering` — 기한조회 UNION 정렬 오류 수정. 함수 인자·권한·조회 범위 유지.
 
 ## 운영 원칙
 

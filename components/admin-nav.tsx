@@ -14,6 +14,7 @@ const adminLinks = [
   ["견적서 자동작성", "/admin/estimates"],
   ["Excel 일괄관리", "/admin/data"],
   ["기한관리", "/admin/deadlines"],
+  ["임기 만료 안내", "/admin/term-notices"],
   ["탈퇴관리", "/admin/withdrawals"],
   ["보안", "/admin/security"],
 ] as const;
@@ -50,7 +51,7 @@ export function AdminNav() {
       ? ([
           ["회사관리", "/admin/companies"],
           ["견적서 자동작성", "/admin/estimates"],
-          ...(staffPermission.can_manage_deadlines ? [["기한관리", "/admin/deadlines"]] as const : []),
+          ...(staffPermission.can_manage_deadlines ? [["기한관리", "/admin/deadlines"], ["임기 만료 안내", "/admin/term-notices"]] as const : []),
         ] as const)
       : [];
 
