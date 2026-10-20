@@ -163,6 +163,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   const data = await response.json();
   if (!response.ok) {
     const rawMessage = data.error_description || data.msg || data.message || "로그인에 실패했습니다.";
+    if (data.error_code === "invalid_credentials") throw new Error("이메일 또는 현재 비밀번호가 일치하지 않습니다.");
     if (String(rawMessage).toLowerCase().includes("email not confirmed")) throw new Error("이메일 인증이 아직 완료되지 않았습니다. 가입 시 받은 인증메일의 링크를 먼저 눌러 주세요.");
     throw new Error(rawMessage);
   }
@@ -184,12 +185,44 @@ export async function signOut() {
   }
 }
 
-export async function updatePassword(token: string, newPassword: string) {
-  const { supabaseUrl, publishableKey } = getSupabaseConfig();
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { method: "PUT", headers: { apikey: publishableKey, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ password: newPassword }) });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.msg || data.message || data.error_description || "비밀번호 변경에 실패했습니다.");
-  return data;
+export async function updatePassword(token: string, newPassword: string, currentPassword?: string) {
+  return authRequest("user", token, { method: "PUT", body: JSON.stringify({ password: newPassword, ...(currentPassword ? { current_password: currentPassword } : {}) }) });
+}
+
+export type AccountUser = { id: string; email?: string; new_email?: string };
+
+export async function getAccountUser(): Promise<AccountUser> {
+  const session = getSession();
+  if (!session) throw new Error("다시 로그인해 주세요.");
+  const user: AccountUser = await authRequest("user", session.access_token);
+  if (getSession()?.user.id !== user.id) throw new Error("로그인 계정이 변경되었습니다. 다시 확인해 주세요.");
+  // Email may have changed in another tab after confirmation. Do not retain a stale login ID.
+  const current = getSession()!;
+  if (current.user.email !== user.email) saveSession({ ...current, user: { id: user.id, email: user.email } });
+  return user;
+}
+
+export async function verifyAccountPassword(password: string) {
+  const user = await getAccountUser();
+  if (!user.email || !password) throw new Error("현재 비밀번호를 입력해 주세요.");
+  const verified = await signIn(user.email, password);
+  try {
+    if (verified.user.id !== user.id || getSession()?.user.id !== user.id) throw new Error("로그인 계정이 변경되었습니다. 다시 확인해 주세요.");
+  } finally {
+    // Verification must neither replace an AAL2 session nor leave an extra login session.
+    const { supabaseUrl, publishableKey } = getSupabaseConfig();
+    await fetch(`${supabaseUrl}/auth/v1/logout?scope=local`, { method: "POST", headers: { apikey: publishableKey, Authorization: `Bearer ${verified.access_token}` } }).catch(() => undefined);
+  }
+  if (getSession()?.user.id !== user.id) throw new Error("로그인 계정이 변경되었습니다. 다시 확인해 주세요.");
+  return user.id;
+}
+
+export async function requestOwnEmailChange(email: string, currentPassword: string): Promise<AccountUser> {
+  const userId = await verifyAccountPassword(currentPassword);
+  const session = getSession();
+  if (!session || session.user.id !== userId) throw new Error("다시 로그인해 주세요.");
+  const redirect = `${window.location.origin}/login`;
+  return authRequest(`user?redirect_to=${encodeURIComponent(redirect)}`, session.access_token, { method: "PUT", body: JSON.stringify({ email }) });
 }
 
 async function authRequest(path: string, token: string, init?: RequestInit) {
@@ -201,7 +234,14 @@ async function authRequest(path: string, token: string, init?: RequestInit) {
     { apikey: publishableKey, "Content-Type": "application/json" },
   );
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.msg || data.message || data.error_description || "보안 인증 요청에 실패했습니다.");
+  if (!response.ok) {
+    const code = data.error_code || data.code;
+    if (code === "insufficient_aal") throw new Error("보안 메뉴에서 2단계 인증을 완료한 뒤 다시 시도해 주세요.");
+    if (code === "reauthentication_needed" || code === "reauthentication_not_valid") throw new Error("최근 로그인 확인이 필요합니다. 로그아웃 후 다시 로그인하여 변경해 주세요.");
+    if (code === "current_password_mismatch") throw new Error("현재 비밀번호가 일치하지 않습니다.");
+    if (code === "same_password") throw new Error("현재 비밀번호와 다른 비밀번호를 입력해 주세요.");
+    throw new Error(data.msg || data.message || data.error_description || "보안 인증 요청에 실패했습니다.");
+  }
   return data;
 }
 
@@ -245,6 +285,12 @@ export async function termNoticeRequest(init?: RequestInit) {
   const session = getSession();
   if (!session) throw new Error("다시 로그인해 주세요.");
   return retryAfterUnauthorized("/api/term-notices", session.access_token, init || {}, { "Content-Type": "application/json" });
+}
+
+export async function companyMaterialsRequest(query = "", init?: RequestInit) {
+  const session = getSession();
+  if (!session) throw new Error("다시 로그인해 주세요.");
+  return retryAfterUnauthorized(`/api/company-materials${query}`, session.access_token, init || {}, { "Content-Type": "application/json" });
 }
 
 export async function publicRest(path: string, init?: RequestInit) {

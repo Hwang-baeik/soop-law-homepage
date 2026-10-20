@@ -30,7 +30,7 @@ export function AuthenticatedArea({ children, internal = false }: { children: Re
           router.replace(destination);
           return;
         }
-        if (internal && profile?.role === "admin" && pathname !== "/admin/security") {
+        if (profile?.role === "admin" && pathname !== "/admin/security") {
           const factors = await listMfaFactors(getSession()?.access_token ?? session.access_token);
           if (cancelled) return;
           if (factors.some((factor) => factor.status === "verified") && getJwtAal(getSession()?.access_token ?? session.access_token) !== "aal2") {

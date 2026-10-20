@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AccountShell, fieldClassName, primaryButtonClassName } from "../../components/account-shell";
-import { listMfaFactors, resendSignupConfirmation, saveSession, signIn, rest } from "../../lib/supabase-browser";
+import { clearSession, listMfaFactors, resendSignupConfirmation, saveSession, signIn, rest } from "../../lib/supabase-browser";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,6 +13,18 @@ export default function LoginPage() {
   const [resending, setResending] = useState(false);
   const [lastEmail, setLastEmail] = useState("");
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    if (!window.location.hash) return;
+    // Confirmation is performed by Auth; do not keep auth tokens in the address bar.
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (hash.get("type") === "email_change") clearSession();
+    const frame = window.requestAnimationFrame(() => {
+      if (hash.has("error")) setMessage("인증 링크가 만료되었거나 처리되지 않았습니다. 기존 이메일로 로그인한 뒤 변경 인증을 다시 요청해 주세요.");
+      else if (hash.get("type") === "email_change") setMessage("이메일 인증 링크가 처리되었습니다. 수신한 인증메일의 절차를 모두 완료한 후 변경한 이메일로 로그인해 주세요.");
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +86,7 @@ export default function LoginPage() {
         {needsEmailConfirmation && <button type="button" disabled={resending} onClick={() => void resendConfirmation()} className="h-11 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-bold text-amber-950 hover:bg-amber-100 disabled:opacity-50">{resending ? "인증메일 발송 중..." : "인증메일 다시 받기"}</button>}
       </form>
       <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
-        <Link href="/signup" className="font-semibold text-emerald-900">법인회원 가입</Link><span className="text-stone-300">|</span><Link href="/change-password" className="font-semibold text-stone-700">비밀번호 변경</Link>
+        <Link href="/signup" className="font-semibold text-emerald-900">법인회원 가입</Link>
       </div>
     </AccountShell>
   );
