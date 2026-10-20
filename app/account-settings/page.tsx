@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AccountShell, fieldClassName, primaryButtonClassName } from "../../components/account-shell";
 import { getSession, rest, signIn, signOut } from "../../lib/supabase-browser";
+import { PersonalSettings } from "../../components/personal-settings";
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -46,8 +47,9 @@ export default function AccountSettingsPage() {
   }
 
   return (
-    <AccountShell title="계정 및 개인정보" description="비밀번호 변경, 개인정보 처리방침 확인, 회원탈퇴 요청을 관리합니다.">
+    <AccountShell title="마이페이지" description="본인의 이름·연락처·이메일·비밀번호를 직접 변경하고 계정을 관리합니다.">
       <div className="grid gap-6">
+        <PersonalSettings />
         <section className="rounded-2xl border border-stone-200 p-5">
           <h2 className="font-extrabold">계정 보안</h2>
           <p className="mt-2 text-sm leading-6 text-stone-600">비밀번호는 다른 서비스와 중복 사용하지 않는 것을 권장합니다.</p>

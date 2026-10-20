@@ -179,7 +179,7 @@ export default function StaffAdminPage() {
 
       <section className="rounded-2xl border border-stone-200 p-5">
         <h2 className="text-lg font-extrabold">사무소 직원계정 생성</h2>
-        <p className="mt-1 text-sm text-stone-500">회원 승인·회원-회사 연결은 현재 관리자 전용으로 유지하고, 직원에게는 회사·문서·기한 관리 권한만 선택적으로 부여합니다.</p>
+        <p className="mt-1 text-sm text-stone-500">회원 승인·회원-회사 연결은 현재 관리자 전용으로 유지하고, 직원에게는 회사·자료 보관현황·기한 관리 권한만 선택적으로 부여합니다.</p>
         <form onSubmit={createStaff} className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold">이름<input name="displayName" required className={fieldClassName} /></label>
           <label className="grid gap-2 text-sm font-semibold">연락처<input name="phone" required className={fieldClassName} /></label>
@@ -188,7 +188,7 @@ export default function StaffAdminPage() {
           <label className="grid gap-2 text-sm font-semibold">비밀번호 확인<input name="passwordConfirm" type="password" required className={fieldClassName} /></label>
           <div className="md:col-span-2 grid gap-3 rounded-xl bg-stone-50 p-4 text-sm">
             <label><input name="manageCompanies" type="checkbox" defaultChecked className="mr-2" />회사정보 관리</label>
-            <label><input name="manageDocuments" type="checkbox" defaultChecked className="mr-2" />문서 관리</label>
+            <label><input name="manageDocuments" type="checkbox" defaultChecked className="mr-2" />자료 보관현황 관리</label>
             <label><input name="manageDeadlines" type="checkbox" defaultChecked className="mr-2" />임원·기간정보 및 기한 관리</label>
           </div>
           <button disabled={working === "create"} className={`${primaryButtonClassName} md:col-span-2`}>{working === "create" ? "직원계정 생성 중..." : "직원계정 생성"}</button>
@@ -203,7 +203,7 @@ export default function StaffAdminPage() {
         </select>
         {selectedStaff && <div className="mt-4 grid gap-3 rounded-xl bg-stone-50 p-4 text-sm">
           <label><input type="checkbox" checked={permissionDraft.companies} onChange={(e) => setPermissionDraft((p) => ({ ...p, companies: e.target.checked }))} className="mr-2" />회사정보 관리</label>
-          <label><input type="checkbox" checked={permissionDraft.documents} onChange={(e) => setPermissionDraft((p) => ({ ...p, documents: e.target.checked }))} className="mr-2" />문서 관리</label>
+          <label><input type="checkbox" checked={permissionDraft.documents} onChange={(e) => setPermissionDraft((p) => ({ ...p, documents: e.target.checked }))} className="mr-2" />자료 보관현황 관리</label>
           <label><input type="checkbox" checked={permissionDraft.deadlines} onChange={(e) => setPermissionDraft((p) => ({ ...p, deadlines: e.target.checked }))} className="mr-2" />임원·기간정보 및 기한 관리</label>
           <label className="font-bold"><input type="checkbox" checked={permissionDraft.active} onChange={(e) => setPermissionDraft((p) => ({ ...p, active: e.target.checked }))} className="mr-2" />직원계정 활성</label>
           <button type="button" onClick={() => void saveGlobalPermissions()} disabled={working === "permissions"} className={primaryButtonClassName}>기본 권한 저장</button>
@@ -220,7 +220,7 @@ export default function StaffAdminPage() {
           </select>
           <div className="grid gap-3 rounded-xl bg-stone-50 p-4 text-sm">
             <label><input name="editCompany" type="checkbox" defaultChecked className="mr-2" />회사 관리데이터 수정</label>
-            <label><input name="manageDocuments" type="checkbox" defaultChecked className="mr-2" />문서 관리</label>
+            <label><input name="manageDocuments" type="checkbox" defaultChecked className="mr-2" />자료 보관현황 관리</label>
             <label><input name="manageDeadlines" type="checkbox" defaultChecked className="mr-2" />기한 관리</label>
           </div>
           <button disabled={!selectedStaff || working === "assignment"} className={primaryButtonClassName}>담당회사 권한 저장</button>

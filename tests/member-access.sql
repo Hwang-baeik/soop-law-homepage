@@ -61,7 +61,7 @@ BEGIN
     IF n<>1 THEN RAISE EXCEPTION 'Client officer isolation failed'; END IF;
     passed:=passed+1;
     SELECT count(*) INTO n FROM public.company_documents;
-    IF n<>1 THEN RAISE EXCEPTION 'Client document isolation failed'; END IF;
+    IF n<>0 THEN RAISE EXCEPTION 'Retired company documents remain accessible'; END IF;
     passed:=passed+1;
     UPDATE public.companies SET name='unauthorized' WHERE id=a;
     GET DIAGNOSTICS n=ROW_COUNT;

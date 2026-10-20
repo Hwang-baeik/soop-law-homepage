@@ -137,7 +137,7 @@ export default function AdminPage() {
         target_member_role: row.member_role,
         allow_view_company: Boolean(row.can_view_company),
         allow_view_documents: Boolean(row.can_view_documents),
-        allow_upload_registry: Boolean(row.can_upload_registry),
+        allow_upload_registry: false,
       });
       setMessage("회사별 권한을 저장했습니다.");
       await loadData();
@@ -179,10 +179,10 @@ export default function AdminPage() {
     const memberRole = String(data.get("memberRole") ?? "member");
     const canViewCompany = data.get("canViewCompany") === "on";
     const canViewDocuments = data.get("canViewDocuments") === "on";
-    const canUploadRegistry = data.get("canUploadRegistry") === "on";
+    const canUploadRegistry = false;
 
     if (!PASSWORD_PATTERN.test(password)) {
-      setMessage("초기 비밀번호는 영문, 숫자, 특수문자를 포함하여 8자리 이상이어야 합니다.");
+      setMessage("초기 비밀번호는 영문, 숫자, 특수문자를 포함하여 12자리 이상이어야 합니다.");
       return;
     }
     if (password !== passwordConfirm) {
@@ -281,8 +281,8 @@ export default function AdminPage() {
           </label>
           <div className="md:col-span-2 grid gap-3 rounded-2xl bg-stone-50 p-4 text-sm">
             <label className="flex items-center gap-3 font-semibold"><input name="canViewCompany" type="checkbox" defaultChecked /> 회사 정보 조회</label>
-            <label className="flex items-center gap-3 font-semibold"><input name="canViewDocuments" type="checkbox" defaultChecked /> 회사 문서 조회</label>
-            <label className="flex items-center gap-3 font-semibold"><input name="canUploadRegistry" type="checkbox" /> 등기부등본 PDF 업로드</label>
+            <label className="flex items-center gap-3 font-semibold"><input name="canViewDocuments" type="checkbox" defaultChecked /> 자료 요청 (소유주·관리권한)</label>
+
             <p className="text-xs leading-5 text-stone-500">회사·문서·회원 삭제 권한은 체크 항목과 무관하게 관리자에게만 유지됩니다.</p>
           </div>
           <button disabled={working === "create-submember"} className={`${primaryButtonClassName} md:col-span-2`}>{working === "create-submember" ? "계정 생성 중..." : "하위 멤버 계정 생성"}</button>
@@ -317,8 +317,8 @@ export default function AdminPage() {
                   </select>
                   <div className="flex flex-wrap gap-4 text-sm">
                     <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(member.can_view_company)} onChange={(event) => updateAccessRow(index, { can_view_company: event.target.checked })} />회사 조회</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(member.can_view_documents)} onChange={(event) => updateAccessRow(index, { can_view_documents: event.target.checked })} />문서 조회</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(member.can_upload_registry)} onChange={(event) => updateAccessRow(index, { can_upload_registry: event.target.checked })} />등기부 업로드</label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(member.can_view_documents)} onChange={(event) => updateAccessRow(index, { can_view_documents: event.target.checked })} />자료 요청</label>
+
                     <span className="font-semibold text-stone-500">{member.is_active ? "접근 활성" : "접근 해제"}</span>
                   </div>
                   <div className="flex gap-2">

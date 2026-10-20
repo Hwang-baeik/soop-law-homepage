@@ -9,6 +9,7 @@ const load = async (path) => {
   return import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 };
 const auth = await load('../lib/supabase-browser.ts');
+const { validatePersonalInfo, validateNewEmail } = await load('../lib/account-settings.ts');
 const { accessRedirect } = await load('../lib/auth-access.ts');
 const originalFetch = globalThis.fetch;
 const oldWindow = globalThis.window;
@@ -26,6 +27,29 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://integration.example.invalid';
 process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-publishable-key';
 const session = (overrides = {}) => ({ access_token: 'old-token', refresh_token: 'refresh-token', expires_in: 3600, expires_at: Math.floor(Date.now()/1000)+3600, user: { id: 'test-user' }, ...overrides });
 const refreshed = session({ access_token: 'new-token', refresh_token: 'rotated-refresh-token' });
+test('personal information rejects control characters and malformed contact numbers', () => {
+  assert.deepEqual(validatePersonalInfo(' 이름 ', ' 010-1234-5678 '), { display_name: '이름', phone: '010-1234-5678' });
+  for (const name of ['', '홍\n길동', 'a'.repeat(101)]) assert.throws(() => validatePersonalInfo(name, '01012345678'));
+  for (const phone of ['123', '010<script>', '1'.repeat(16)]) assert.throws(() => validatePersonalInfo('이름', phone));
+  assert.equal(validateNewEmail(' member@example.com '), 'member@example.com');
+  for (const email of ['a@example.com,b@example.com', 'a\nb@example.com', 'invalid']) assert.throws(() => validateNewEmail(email));
+});
+test('password verification preserves the existing MFA session and closes only the verification session', async () => {
+  const current = session({ access_token: 'mfa-session', user: { id: 'test-user', email: 'member@example.invalid' } });
+  auth.saveSession(current);
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith('/auth/v1/user')) return Response.json(current.user);
+    if (url.includes('grant_type=password')) return Response.json(session({ access_token: 'verification-session', user: current.user }));
+    assert.ok(url.endsWith('/logout?scope=local'));
+    assert.equal(new Headers(init.headers).get('authorization'), 'Bearer verification-session');
+    return new Response(null, { status: 204 });
+  };
+  assert.equal(await auth.verifyAccountPassword('current-password'), current.user.id);
+  assert.equal(auth.getSession().access_token, 'mfa-session');
+  assert.equal(calls.length, 3);
+});
 test.afterEach(() => { values.clear(); globalThis.fetch = originalFetch; });
 test.after(() => {
   if (oldWindow === undefined) delete globalThis.window; else globalThis.window = oldWindow;
