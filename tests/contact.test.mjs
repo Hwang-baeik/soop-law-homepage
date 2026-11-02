@@ -34,20 +34,13 @@ for (const [label, body] of [
 
 test('allows exactly 5000 characters', () => assert.ok(validateContact({ ...valid, message: '가'.repeat(5000) }).data));
 
-const sent = [];
-globalThis.__contactSend = async (payload) => { sent.push(payload); return { error: null }; };
-const routeSource = (await compile('../app/api/contact/route.ts'))
-  .replace(/import .* from "next\/server";/, 'const NextResponse = { json: (data, init) => Response.json(data, init) };')
-  .replace(/import .* from "resend";/, 'class Resend { emails = { send: (payload) => globalThis.__contactSend(payload) }; }')
-  .replace('"../../../lib/contact"', JSON.stringify(validationUrl));
-const { POST } = await import(moduleUrl(routeSource));
-const request = (body, contentType = 'application/json') => new Request('https://sooplaw.com/api/contact', {
-  method: 'POST', headers: { 'Content-Type': contentType }, body,
-});
-const originalKey = process.env.RESEND_API_KEY;
-// No real delivery is possible: the mail transport above is replaced for this suite.
-process.env.RESEND_API_KEY = 'test-key';
-
+const { loadRoute, request: protectedRequest, state, cleanup } = await import('./form-test-helpers.mjs');
+const { POST } = await loadRoute('../app/api/contact/route.ts');
+const request = (body, contentType = 'application/json') => {
+  let parsed;
+  try { parsed = JSON.parse(body); } catch { return protectedRequest(body, { path: 'contact', type: contentType, raw: true }); }
+  return protectedRequest(parsed, { path: 'contact', type: contentType });
+};
 test('returns 400 for malformed JSON', async () => assert.equal((await POST(request('{'))).status, 400));
 test('returns 400 for null payload', async () => assert.equal((await POST(request('null'))).status, 400));
 test('returns 415 for unsupported content type', async () => assert.equal((await POST(request('{}', 'text/plain'))).status, 415));
@@ -58,23 +51,26 @@ test('validates before checking mail configuration', async () => {
   const response = await POST(request(JSON.stringify(valid)));
   assert.equal(response.status, 503);
   assert.ok(!(await response.text()).includes('RESEND_API_KEY'));
-  process.env.RESEND_API_KEY = 'test-key';
+  process.env.RESEND_API_KEY = 'test-only-never-real';
 });
-test('sends escaped HTML and sets reply-to only for valid requests', async () => {
-  assert.equal(sent.length, 0);
+test('sends plain text and sets reply-to only for valid requests', async () => {
+  state.accepted.clear();
   const response = await POST(request(JSON.stringify({ ...valid, message: '<script>alert("x")</script>' })));
   assert.equal(response.status, 200);
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0].replyTo, valid.email);
-  assert.ok(sent[0].html.includes('&lt;script&gt;'));
-  assert.ok(!sent[0].html.includes('<script>'));
+  assert.equal(state.accepted.size, 1);
+  const mail = [...state.accepted.values()][0];
+  assert.equal(mail.reply_to, valid.email);
+  assert.ok(mail.text.includes('<script>'));
+  assert.ok(!Object.hasOwn(mail, 'html'));
 });
 test('does not report success when mail provider rejects delivery', async () => {
-  globalThis.__contactSend = async () => ({ error: { name: 'test_failure' } });
-  assert.equal((await POST(request(JSON.stringify(valid)))).status, 500);
+  state.fail = true;
+  assert.equal((await POST(request(JSON.stringify(valid)))).status, 503);
+  state.fail = false;
 });
-test.after(() => {
-  if (originalKey === undefined) delete process.env.RESEND_API_KEY;
-  else process.env.RESEND_API_KEY = originalKey;
-  delete globalThis.__contactSend;
+test('existing contact rejects automated requests', async () => {
+  state.bot = true;
+  assert.equal((await POST(request(JSON.stringify(valid)))).status, 403);
+  state.bot = false;
 });
+test.after(cleanup);

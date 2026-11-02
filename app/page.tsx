@@ -102,7 +102,7 @@ export default function SoopLawOfficeHomepage() {
                 {office.name}는 법인등기, 부동산등기, 상속절차, 민사 신청서류 작성까지
                 의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-9 flex flex-col flex-wrap gap-3 sm:flex-row">
                 <a
                   href="tel:02-6956-8683"
                   className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950"
@@ -112,6 +112,7 @@ export default function SoopLawOfficeHomepage() {
                 <a href="#services" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-base font-semibold hover:bg-stone-100">
                   업무분야 보기
                 </a>
+                <Link href="/incorporation" className="inline-flex min-h-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-6 py-3 font-semibold text-emerald-900 hover:bg-emerald-100">법인설립 조사서 작성</Link>
               </div>
             </div>
 

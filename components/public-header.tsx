@@ -3,6 +3,7 @@ import Link from "next/link";
 
 const links = [
   ["/#services", "업무분야"],
+  ["/incorporation", "법인설립 조사서"],
   ["/board", "실무자료실"],
   ["/#process", "진행절차"],
   ["/#location", "오시는 길"],

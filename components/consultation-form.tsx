@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { contactCategories, contactLimits, validateContact } from "../lib/contact";
 
 const privacyPolicy = `숲 법무사 사무소(이하 ‘사무소’라 합니다)는 개인정보 보호법 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
@@ -35,6 +35,8 @@ export function ConsultationForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [website, setWebsite] = useState("");
+  const submission = useRef<{ serialized: string; id: string } | null>(null);
 
   const updateField = (key: keyof typeof form, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -53,13 +55,16 @@ export function ConsultationForm() {
     try {
       setIsSubmitting(true);
       setSubmitMessage("");
+      const serialized = JSON.stringify(form);
+      if (!submission.current || submission.current.serialized !== serialized) submission.current = { serialized, id: crypto.randomUUID() };
 
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, website, requestId: submission.current.id }),
+        signal: AbortSignal.timeout(30000),
       });
 
       const result = await response.json().catch(() => null);
@@ -173,6 +178,8 @@ export function ConsultationForm() {
         개인정보 수집 및 이용에 동의합니다.
       </label>
 
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden"><label>Website<input name="website" value={website} onChange={e => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" /></label></div>
+      <a href="/incorporation" className="text-center text-sm font-semibold text-emerald-900 underline">주식회사 설립을 준비 중이신가요? 법인설립 기초조사서 작성하기</a>
       <button
         type="submit"
         disabled={!form.agree || isSubmitting}
