@@ -138,6 +138,7 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
         console.error("naverworks_delivery_uncertain", { job: hash(key) });
       }
       await redis(["EVAL", FINISH, 2, key, queue(), JSON.stringify({ ...job, status: state }), job.kind === "welcome" ? 0 : 86400, state, now()]);
+      if (state === "sent") console.info("naverworks_delivery_sent", { job: hash(key), kind: job.kind });
     }
   }
   function authorizedRetry(request: Request) {
