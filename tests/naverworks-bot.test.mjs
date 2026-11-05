@@ -144,6 +144,12 @@ test('missing configuration and unavailable storage cannot acknowledge jobs as s
   const g = fixture(); g.state.storageFails = true;
   await assert.rejects(g.bot.accept(request(event('#접수완료'))), e=>e.code==='storage_unavailable');
 });
+test('Vercel Marketplace KV environment names reuse the connected Redis store', async () => {
+  const f = fixture({ UPSTASH_REDIS_REST_URL: undefined, UPSTASH_REDIS_REST_TOKEN: undefined,
+    KV_REST_API_URL: env.UPSTASH_REDIS_REST_URL, KV_REST_API_TOKEN: env.UPSTASH_REDIS_REST_TOKEN });
+  await f.bot.accept(request(event('#등기완료'))); await f.bot.drain();
+  assert.deepEqual(f.delivered, ['등기완서류 편철을 해야합니다.']);
+});
 test('an authentication failure leaves durable jobs available after recovery', async () => {
   const f = fixture(); await f.bot.accept(request(event('#등기완료'))); f.state.tokenFails = true;
   await assert.rejects(f.bot.drain()); assert.equal(f.pending.size, 1);

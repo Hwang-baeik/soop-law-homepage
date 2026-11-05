@@ -26,6 +26,8 @@ Vercel의 Next.js API가 네이버웍스 Callback을 받아 응답한다. PC나 
 
 Vercel 프로젝트 → Storage / Marketplace에서 Upstash Redis를 연결한다. 운영용으로 유지되는 데이터베이스를 사용한다. 기간 제한 체험 DB는 사용하지 않는다. 저장소의 eviction(용량 부족 시 자동 삭제)을 끄고 충분한 용량을 확보한다. 최초 안내 기록이 삭제되면 다시 안내할 수 있다.
 
+기존 Vercel Marketplace 연결이 `KV_REST_API_URL`, `KV_REST_API_TOKEN` 이름으로 등록되어 있어도 그대로 사용할 수 있다. 이때 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`을 중복 등록할 필요가 없다. 읽기 전용 토큰은 사용할 수 없다.
+
 저장하는 정보는 봇 ID, 대상 채널 ID, 정해진 안내 문구, 발송 상태이다. 직원의 원문 메시지와 이름은 저장하지 않는다. 키워드 응답 기록은 24시간 뒤 만료되고 최초 안내 기록에는 만료를 설정하지 않는다. 원문 이벤트의 SHA-256 해시를 중복 식별에 사용한다.
 
 ## 3. Vercel 환경 변수

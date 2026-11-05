@@ -38,7 +38,11 @@ const FINISH = `redis.call('SET',KEYS[1],ARGV[1]); if tonumber(ARGV[2])>0 then r
 
 export function createBot(env: Environment = process.env, http: typeof fetch = fetch, now = Date.now) {
   function required(name: string) {
-    const value = env[name];
+    const aliases: Record<string, string> = {
+      UPSTASH_REDIS_REST_URL: "KV_REST_API_URL",
+      UPSTASH_REDIS_REST_TOKEN: "KV_REST_API_TOKEN",
+    };
+    const value = env[name] || env[aliases[name]];
     if (!value) throw new BotError(`missing_${name}`);
     return value;
   }
