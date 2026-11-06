@@ -94,12 +94,13 @@ for (const [keyword, reply] of RULES) test(`responds to ${keyword} inside a sent
   assert.ok([...f.expirations.values()].every(ttl => ttl === 86400));
 });
 test('each keyword appears only once in a reply batch; all distinct keywords are handled', async () => {
-  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 #완료서류발송완료 #비용확인'))); await f.bot.drain();
+  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 #완료서류발송완료 #비용확인 #안내완료'))); await f.bot.drain();
   assert.deepEqual(f.delivered, [
     '완료, 보정 등 대기 중입니다.',
     '등기완료서류 준비를 해야합니다.',
     '업무 정리를 해야합니다.',
     '비용이 확인되었습니다.',
+    '정보 취합 후 서류작성 해야합니다.',
   ]);
 });
 test('duplicate callback cannot send twice, even through a fresh instance', async () => {
