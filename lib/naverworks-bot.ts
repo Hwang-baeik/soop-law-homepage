@@ -2,8 +2,9 @@ import { createHash, createHmac, sign, timingSafeEqual } from "node:crypto";
 
 export const RULES = [
   ["#접수완료", "완료, 보정 등 대기 중입니다."],
-  ["#등기완료", "등기완서류 편철을 해야합니다."],
+  ["#등기완료", "등기완료서류 준비를 해야합니다."],
   ["#완료서류발송완료", "업무 정리를 해야합니다."],
+  ["#비용확인", "비용이 확인되었습니다."],
 ] as const;
 export const WELCOME = "업무 안내 봇입니다. 아래 키워드가 포함된 메시지를 보내면 다음 할 일을 안내합니다.\n\n"
   + RULES.map(([keyword, reply]) => `${keyword}\n→ ${reply}`).join("\n\n")
@@ -117,7 +118,7 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
   }
   async function drain() {
     // Acquire credentials before claiming jobs: authentication outages remain recoverable.
-    const jobs = await redis(["ZRANGE", queue(), 0, 2]) as string[];
+    const jobs = await redis(["ZRANGE", queue(), 0, RULES.length - 1]) as string[];
     if (!jobs.length) return;
     const bearer = await accessToken();
     for (const key of jobs) {
