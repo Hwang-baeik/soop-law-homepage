@@ -104,6 +104,16 @@ test('each keyword appears only once in a reply batch; all distinct keywords are
     '업무 정리를 해야합니다.',
   ]);
 });
+test('each reply starts with the date immediately before its hashtag, when present', async () => {
+  const f = fixture();
+  await f.bot.accept(request(event('2026-11-04 #접수완료\n2026-11-06 #등기완료 #등기완료\n2026-11-07 확인 후 #완료서류발송')));
+  await f.bot.drain();
+  assert.deepEqual(f.delivered, [
+    '2026-11-04 #접수완료 · 완료, 보정 등 대기 중입니다.',
+    '2026-11-06 #등기완료 · 등기완료서류 준비를 해야합니다.',
+    '업무 정리를 해야합니다.',
+  ]);
+});
 test('the previous shipping hashtag does not trigger the renamed hashtag', async () => {
   const f = fixture();
   assert.equal(await f.bot.accept(request(event('#완료서류발송완료'))), false);

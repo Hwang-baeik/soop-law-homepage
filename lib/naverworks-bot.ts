@@ -108,8 +108,16 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
     const actions: Job[] = [];
     if (event.type === "join") actions.push({ channelId, text: WELCOME, kind: "welcome", status: "pending" });
     if (event.type === "message" && typeof event.source.userId === "string" && event.source.userId !== env.NAVERWORKS_BOT_ID && event.content?.type === "text" && typeof event.content.text === "string") {
-      const hashtags = new Set(event.content.text.match(/#[\p{L}\p{M}\p{N}_]+/gu));
-      for (const [keyword, text] of RULES) if (hashtags.has(keyword)) actions.push({ channelId, text, kind: "message", status: "pending" });
+      const hashtags = new Map<string, string>();
+      for (const [, date, keyword] of event.content.text.matchAll(/(?:(?<![\p{L}\p{M}\p{N}_-])(\d{4}-\d{2}-\d{2})[ \t]+)?(#[\p{L}\p{M}\p{N}_]+)/gu)) {
+        if (!hashtags.get(keyword)) hashtags.set(keyword, date ?? "");
+      }
+      for (const [keyword, reply] of RULES) {
+        const date = hashtags.get(keyword);
+        if (date === undefined) continue;
+        const text = date ? `${date} ${keyword} · ${reply}` : reply;
+        actions.push({ channelId, text, kind: "message", status: "pending" });
+      }
     }
     if (!actions.length) return false;
     deliveryConfig();
