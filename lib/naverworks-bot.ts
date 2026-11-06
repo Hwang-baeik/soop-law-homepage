@@ -1,11 +1,12 @@
 import { createHash, createHmac, sign, timingSafeEqual } from "node:crypto";
 
 export const RULES = [
+  ["#안내완료", "정보 취합 후 서류작성 해야합니다."],
+  ["#서류작성완료", "날인 및 접수준비를 해야합니다."],
+  ["#비용확인", "비용이 확인되었습니다."],
   ["#접수완료", "완료, 보정 등 대기 중입니다."],
   ["#등기완료", "등기완료서류 준비를 해야합니다."],
-  ["#완료서류발송완료", "업무 정리를 해야합니다."],
-  ["#비용확인", "비용이 확인되었습니다."],
-  ["#안내완료", "정보 취합 후 서류작성 해야합니다."],
+  ["#완료서류발송", "업무 정리를 해야합니다."],
 ] as const;
 export const WELCOME = "업무 안내 봇입니다. 아래 키워드가 포함된 메시지를 보내면 다음 할 일을 안내합니다.\n\n"
   + RULES.map(([keyword, reply]) => `${keyword}\n→ ${reply}`).join("\n\n")
@@ -107,7 +108,8 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
     const actions: Job[] = [];
     if (event.type === "join") actions.push({ channelId, text: WELCOME, kind: "welcome", status: "pending" });
     if (event.type === "message" && typeof event.source.userId === "string" && event.source.userId !== env.NAVERWORKS_BOT_ID && event.content?.type === "text" && typeof event.content.text === "string") {
-      for (const [keyword, text] of RULES) if (event.content.text.includes(keyword)) actions.push({ channelId, text, kind: "message", status: "pending" });
+      const hashtags = new Set(event.content.text.match(/#[\p{L}\p{M}\p{N}_]+/gu));
+      for (const [keyword, text] of RULES) if (hashtags.has(keyword)) actions.push({ channelId, text, kind: "message", status: "pending" });
     }
     if (!actions.length) return false;
     deliveryConfig();

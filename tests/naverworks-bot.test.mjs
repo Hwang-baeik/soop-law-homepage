@@ -94,14 +94,20 @@ for (const [keyword, reply] of RULES) test(`responds to ${keyword} inside a sent
   assert.ok([...f.expirations.values()].every(ttl => ttl === 86400));
 });
 test('each keyword appears only once in a reply batch; all distinct keywords are handled', async () => {
-  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 #완료서류발송완료 #비용확인 #안내완료'))); await f.bot.drain();
+  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 (#완료서류발송) #비용확인 #안내완료 #서류작성완료'))); await f.bot.drain();
   assert.deepEqual(f.delivered, [
+    '정보 취합 후 서류작성 해야합니다.',
+    '날인 및 접수준비를 해야합니다.',
+    '비용이 확인되었습니다.',
     '완료, 보정 등 대기 중입니다.',
     '등기완료서류 준비를 해야합니다.',
     '업무 정리를 해야합니다.',
-    '비용이 확인되었습니다.',
-    '정보 취합 후 서류작성 해야합니다.',
   ]);
+});
+test('the previous shipping hashtag does not trigger the renamed hashtag', async () => {
+  const f = fixture();
+  assert.equal(await f.bot.accept(request(event('#완료서류발송완료'))), false);
+  assert.equal(f.records.size, 0);
 });
 test('duplicate callback cannot send twice, even through a fresh instance', async () => {
   const f = fixture(), data = event('#등기완료');
@@ -123,6 +129,9 @@ test('welcome persists through restart and re-invitation, without task registrat
   await restarted.accept(request(event(undefined, { type: 'join', content: undefined, issuedTime: new Date(instant+1000).toISOString() }))); await restarted.drain();
   assert.deepEqual(f.delivered, [WELCOME]); assert.ok([...f.expirations.values()].every(ttl=>ttl===0));
   assert.ok(RULES.every(([keyword, reply]) => WELCOME.includes(keyword) && WELCOME.includes(reply)));
+  assert.deepEqual(WELCOME.match(/^#.+$/gm), [
+    '#안내완료', '#서류작성완료', '#비용확인', '#접수완료', '#등기완료', '#완료서류발송',
+  ]);
   assert.ok(!WELCOME.includes('자동 등록'));
 });
 for (const [name, data] of [
