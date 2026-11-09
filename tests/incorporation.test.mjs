@@ -52,6 +52,45 @@ test('provider failure never reports success and retry retains idempotency key',
   const key = state.calls.at(-1).key; state.fail = false;
   assert.equal((await POST(request(body))).status, 200); assert.equal(state.calls.at(-1).key, key);
 });
+const freeSample = () => ({
+  contactName: "테스트 담당자",
+  email: "test@example.com",
+  phone: "010-1234-5678",
+  agree: true,
+  freeText: "  온라인 쇼핑몰을 운영합니다.\n\n본점은 미정입니다.  ",
+});
+
+test('free submissions mail the original text and contact details without structured fields', async () => {
+  const survey = freeSample();
+  const response = await POST(request({ mode: "free", survey }));
+  assert.equal(response.status, 200);
+  const { body } = state.calls.at(-1);
+  assert.deepEqual(body.to, ["soop@sooplaw.com"]);
+  assert.equal(body.reply_to, survey.email);
+  assert.ok(body.text.includes(`【자유 작성 내용】\n${survey.freeText}\n\n`));
+  assert.ok(body.text.includes("incorporation-free-v1"));
+  assert.ok(!body.text.includes("【회사 기본정보】"));
+
+  const empty = await POST(request({ mode: "free", survey: { ...survey, freeText: "" } }));
+  assert.equal(empty.status, 200);
+  assert.ok(state.calls.at(-1).body.text.includes("【자유 작성 내용】\n미정"));
+});
+
+test('invalid free submissions and unsupported modes are rejected before mail delivery', async () => {
+  const survey = freeSample();
+  const before = state.calls.length;
+  for (const override of [
+    { agree: false },
+    { email: "invalid" },
+    { freeText: "주민등록번호 990101-1234567" },
+    { freeText: "가".repeat(6001) },
+  ]) {
+    assert.equal((await POST(request({ mode: "free", survey: { ...survey, ...override } }))).status, 400);
+  }
+  assert.equal((await POST(request({ mode: "unknown", survey: sample() }))).status, 400);
+  assert.equal(state.calls.length, before);
+});
+
 test('instance backstop throttles repeated accepted attempts', async () => {
   for (let i = 0; i < 5; i++) assert.equal((await POST(request({ survey: sample() }, { identity: '198.51.100.5' }))).status, 200);
   const response = await POST(request({ survey: sample() }, { identity: '198.51.100.5' })); assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '600');
