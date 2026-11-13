@@ -19,7 +19,7 @@ export function PublicHeader() {
         <nav aria-label="주요 메뉴" className="hidden items-center gap-6 text-sm font-semibold text-stone-600 lg:flex">
           {links.map(([href, label]) => <Link key={href} href={href} className="hover:text-emerald-900">{label}</Link>)}
         </nav>
-        <Link href="/#consultation" className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-emerald-900 px-5 text-sm font-semibold text-white hover:bg-emerald-950">상담 문의</Link>
+        <Link href="/consultation" className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-emerald-900 px-5 text-sm font-semibold text-white hover:bg-emerald-950">상담 문의</Link>
       </div>
       <nav aria-label="모바일 주요 메뉴" className="flex flex-wrap justify-center gap-x-2 border-t border-stone-100 px-2 text-sm font-semibold text-stone-600 lg:hidden">
         {links.map(([href, label]) => <Link key={href} href={href} className="inline-flex min-h-11 items-center px-2 hover:text-emerald-900">{label}</Link>)}
