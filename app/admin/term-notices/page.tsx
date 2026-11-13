@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AccountShell, fieldClassName } from "../../../components/account-shell";
 import { termNoticeRequest } from "../../../lib/supabase-browser";
 import { createNoticeDraft, defaultNoticeContact, noticeBatchSize, noticeRanges, noticeSender, type NoticeCompany, type NoticeMail, type NoticeRange, type NoticeSendResult } from "../../../lib/term-notices";
@@ -88,14 +88,13 @@ export default function TermNoticesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState("");
-  const requestVersion = useRef(0);
+  const [reload, setReload] = useState(0);
   const sendLock = useRef(false);
   const selectAll = useRef<HTMLInputElement>(null);
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const reviewing = review !== null;
 
-  const load = useCallback(async () => {
-    const version = ++requestVersion.current;
+  function resetList() {
     setLoading(true);
     setError("");
     setData(null);
@@ -103,19 +102,20 @@ export default function TermNoticesPage() {
     setReview(null);
     setResults({});
     setProgress("");
-    try {
-      const response = await termNoticeRequest(undefined, range);
+  }
+  useEffect(() => {
+    const controller = new AbortController();
+    termNoticeRequest({ signal: controller.signal }, range).then(async response => {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "목록을 불러오지 못했습니다.");
-      if (version === requestVersion.current) setData(result);
-    } catch (error) {
-      if (version === requestVersion.current) setError(error instanceof Error ? error.message : "목록을 불러오지 못했습니다.");
-    } finally {
-      if (version === requestVersion.current) setLoading(false);
-    }
-  }, [range]);
-
-  useEffect(() => { void load(); return () => { requestVersion.current++; }; }, [load]);
+      if (!controller.signal.aborted) setData(result);
+    }).catch(error => {
+      if (!controller.signal.aborted) setError(error instanceof Error ? error.message : "목록을 불러오지 못했습니다.");
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [range, reload]);
   useEffect(() => { if (reviewing) reviewHeading.current?.focus(); }, [reviewing]);
 
   const visible = data?.companies.filter(c => c.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) ?? [];
@@ -181,7 +181,10 @@ export default function TermNoticesPage() {
     <div className="flex flex-wrap items-center justify-between gap-3">
       <Link href="/admin/deadlines" className="text-sm font-semibold text-emerald-900 underline">전체 기한관리 보기</Link>
       <button type="button" className={outline} disabled={loading || sending} onClick={() => {
-        if (!review || window.confirm("현재 검토 목록을 닫고 최신 데이터를 불러올까요?")) void load();
+        if (!review || window.confirm("현재 검토 목록을 닫고 최신 데이터를 불러올까요?")) {
+          resetList();
+          setReload(value => value + 1);
+        }
       }}>목록 새로고침</button>
     </div>
     {loading && <p role="status" className="mt-6 text-sm">임기 만료 법인을 조회하고 있습니다.</p>}
@@ -191,7 +194,10 @@ export default function TermNoticesPage() {
       <h2 className="text-lg font-bold">1. 발송할 회사 선택</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-semibold">임기 만료 구간
-          <select className={`${fieldClassName} mt-1`} value={range} onChange={event => setRange(event.target.value as NoticeRange)}>
+          <select className={`${fieldClassName} mt-1`} value={range} onChange={event => {
+            resetList();
+            setRange(event.target.value as NoticeRange);
+          }}>
             {Object.entries(noticeRanges).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
