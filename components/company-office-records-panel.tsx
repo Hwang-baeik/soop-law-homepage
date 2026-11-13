@@ -11,13 +11,32 @@ export function CompanyOfficeRecordsPanel({companyId,editable=false}:{companyId:
  const [contacts,setContacts]=useState<Contact[]>([]); const [logs,setLogs]=useState<WorkLog[]>([]); const [message,setMessage]=useState(""); const [working,setWorking]=useState("");
  async function load(){const s=getSession();if(!s)return;const [cr,lr]=await Promise.all([rest(`company_contacts?company_id=eq.${companyId}&select=id,contact_type,label,contact_name,value,note,is_primary,visible_to_client&order=is_primary.desc,created_at.asc`,s.access_token),rest(`company_work_logs?company_id=eq.${companyId}&select=id,work_date,category,title,description,visible_to_client&order=work_date.desc,created_at.desc`,s.access_token)]);if(cr.ok)setContacts(await cr.json());if(lr.ok)setLogs(await lr.json());}
  useEffect(()=>{void load();},[companyId]);
+ async function setPrimaryEmail(contactId: string) {
+  const session = getSession();
+  if (!session) return;
+  setWorking("primary-email");
+  setMessage("");
+  try {
+   const response = await rest("rpc/set_primary_term_notice_email", session.access_token, {
+    method: "POST",
+    body: JSON.stringify({ p_company: companyId, p_contact: contactId }),
+   });
+   if (!response.ok) throw new Error("대표 이메일을 지정하지 못했습니다. 이메일 주소와 관리자 권한을 확인해 주세요.");
+   await load();
+   setMessage("대표 이메일을 지정했습니다.");
+  } catch (error) {
+   setMessage(error instanceof Error ? error.message : "대표 이메일을 지정하지 못했습니다.");
+  } finally {
+   setWorking("");
+  }
+ }
  async function addContact(e:FormEvent<HTMLFormElement>){e.preventDefault();const s=getSession();if(!s)return;const form=e.currentTarget;const f=new FormData(form);try{setWorking("contact");const r=await rest("company_contacts",s.access_token,{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({company_id:companyId,contact_type:String(f.get("type")),label:String(f.get("label")),contact_name:String(f.get("name")||"").trim()||null,value:String(f.get("value")),note:String(f.get("note")||"").trim()||null,is_primary:f.get("primary")==="on",visible_to_client:f.get("visible")==="on",created_by:s.user.id})});if(!r.ok)throw new Error("연락처를 저장하지 못했습니다.");form.reset();await load();}catch(err){setMessage(err instanceof Error?err.message:"저장 중 오류가 발생했습니다.");}finally{setWorking("");}}
  async function addLog(e:FormEvent<HTMLFormElement>){e.preventDefault();const s=getSession();if(!s)return;const form=e.currentTarget;const f=new FormData(form);try{setWorking("log");const r=await rest("company_work_logs",s.access_token,{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({company_id:companyId,work_date:String(f.get("date")),category:String(f.get("category")),title:String(f.get("title")),description:String(f.get("description")||"").trim()||null,visible_to_client:f.get("visible")==="on",created_by:s.user.id})});if(!r.ok)throw new Error("업무로그를 저장하지 못했습니다.");form.reset();await load();}catch(err){setMessage(err instanceof Error?err.message:"저장 중 오류가 발생했습니다.");}finally{setWorking("");}}
  return <section className="rounded-2xl border border-stone-200 bg-white p-5">
   <div><p className="text-xs font-bold tracking-[0.14em] text-emerald-800">OFFICE RECORD</p><h2 className="mt-1 text-lg font-extrabold">연락처 · 우리 사무실 처리업무</h2><p className="mt-1 text-sm text-stone-500">회사와 연결된 연락수단과 숲 법무사 사무소에서 실제 처리한 업무 이력을 관리합니다.</p></div>
   {message&&<p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{message}</p>}
   <div className="mt-6 grid gap-6 lg:grid-cols-2">
-   <div><h3 className="font-extrabold">연결 연락처</h3><div className="mt-3 grid gap-2">{contacts.length?contacts.map(c=><div key={c.id} className="rounded-xl border border-stone-200 p-4"><div className="flex justify-between gap-3"><div><p className="font-bold">{c.label}{c.is_primary?" · 대표":""}</p><p className="mt-1 text-sm text-stone-700">{c.contact_name?`${c.contact_name} · `:""}{c.value}</p></div><span className="text-xs font-semibold text-stone-400">{c.contact_type}</span></div>{c.note&&<p className="mt-2 text-xs text-stone-500">{c.note}</p>}</div>):<p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 연락처가 없습니다.</p>}</div></div>
+   <div><h3 className="font-extrabold">연결 연락처</h3><div className="mt-3 grid gap-2">{contacts.length?contacts.map(c=><div key={c.id} className="rounded-xl border border-stone-200 p-4"><div className="flex justify-between gap-3"><div><p className="font-bold">{c.label}{c.is_primary?" · 대표":""}</p><p className="mt-1 text-sm text-stone-700">{c.contact_name?`${c.contact_name} · `:""}{c.value}</p></div><span className="text-xs font-semibold text-stone-400">{c.contact_type}</span></div>{c.note&&<p className="mt-2 text-xs text-stone-500">{c.note}</p>}{editable && c.contact_type === "email" && !c.is_primary && <button type="button" disabled={Boolean(working)} onClick={() => void setPrimaryEmail(c.id)} className="mt-2 text-xs font-semibold text-emerald-800 underline disabled:opacity-50">대표 이메일로 지정</button>}</div>):<p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 연락처가 없습니다.</p>}</div></div>
    <div><h3 className="font-extrabold">업무 로그</h3><div className="mt-3 grid gap-2">{logs.length?logs.map(l=><div key={l.id} className="rounded-xl border border-stone-200 p-4"><div className="flex justify-between gap-3"><div><p className="font-bold">{l.title}</p><p className="mt-1 text-xs text-stone-500">{l.work_date} · {l.category}</p></div></div>{l.description&&<p className="mt-2 text-sm leading-6 text-stone-600">{l.description}</p>}</div>):<p className="rounded-xl bg-stone-50 p-4 text-sm text-stone-500">등록된 처리업무가 없습니다.</p>}</div></div>
   </div>
   {editable&&<div className="mt-8 grid gap-6 border-t border-stone-200 pt-6 lg:grid-cols-2">

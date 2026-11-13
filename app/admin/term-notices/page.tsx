@@ -127,7 +127,7 @@ export default function TermNoticesPage() {
       <button type="button" onClick={download} disabled={!data.companies.length} className="mt-4 rounded-xl bg-emerald-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">
         조회 법인 전체 안내문 저장 (TXT ZIP)
       </button>
-      <p className="mt-3 text-sm leading-7 text-stone-600">임기 만료일 오전 9시대에 회사의 대표 이메일로 자동 발송합니다. 대표 이메일이 없거나 여러 주소로 등록된 경우에는 회사 정보에서 연락처를 확인해 주세요.</p>
+      <p className="mt-3 text-sm leading-7 text-stone-600">임기 만료일 오전 9시대에 대표 이메일로 자동 발송합니다. 대표 이메일이 없으면 해당 법인에만 등록된 단일 이메일을 사용합니다. 주소가 여러 개이거나 다른 법인과 공유되는 경우 회사 정보에서 대표 이메일을 지정해 주세요.</p>
       <p className="mt-4 text-sm leading-7 text-stone-600">등록된 임기 계산값을 기준으로 조회합니다. 정관 등 원자료 확인이 필요한 일정은 발송 전 검토해 주세요. 만료일 미확정 법인 {data.unknownCount}곳과 이미 기한이 지난 법인 {data.overdueCount}곳은 <Link href="/admin/deadlines" className="font-semibold text-emerald-900 underline">전체 기한관리</Link>에서 별도로 확인할 수 있습니다.</p>
       <label htmlFor="notice-search" className="mt-6 block text-sm font-semibold">회사명 검색</label>
       <input id="notice-search" className={`${fieldClassName} mt-2`} value={search} onChange={e => setSearch(e.target.value)} placeholder="회사명을 입력해 주세요" />
