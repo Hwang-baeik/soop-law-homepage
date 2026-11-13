@@ -49,6 +49,15 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
+function Caution({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl border-l-4 border-yellow-300 bg-red-950 px-4 py-3 text-yellow-100">
+      <p className="font-bold text-yellow-300">주의사항</p>
+      <p className="mt-1 text-base font-semibold leading-7">{children}</p>
+    </div>
+  );
+}
+
 type PersonRow = Person & { id: number };
 
 function People({ entries, shareholder = false, onChange }: {
@@ -241,6 +250,7 @@ export default function IncorporationForm() {
           </div>
         </Section>
         <Section id="company-details" title="회사 정보">
+          <Caution>동일한 관할 내 같은 상호가 있는 경우 상호를 변경해야 할 가능성도 있습니다.</Caution>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="회사 종류" value={survey.companyType} onChange={value => update("companyType", value)} options={companyTypes} />
             <Select label="회사 종류 표기 위치" value={survey.companyTypePosition} onChange={value => update("companyTypePosition", value)}
@@ -251,7 +261,6 @@ export default function IncorporationForm() {
             <p>국문상호에는 회사 종류를 뺀 이름만 입력하세요. 예를 들어 ‘새봄’을 입력하면 ‘주식회사 새봄’ 또는 ‘새봄 주식회사’로 표시됩니다.</p>
             <p>국문상호 1순위 <strong>{companyName}</strong></p>
             {alternateName !== UNKNOWN && <p>국문상호 2순위 <strong>{alternateName}</strong></p>}
-            <p>동일한 관할 내 같은 상호가 있는 경우 상호를 변경해야 할 가능성도 있습니다.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {companyFields.slice(4).filter(([key]) => shareFieldsApply || (key !== "sharePrice" && key !== "authorizedShares")).map(([key, label, placeholder]) => (
@@ -267,7 +276,7 @@ export default function IncorporationForm() {
           </div>
         </Section>
         <Section id="business-purposes" title="사업목적">
-          <p className="text-sm leading-6 text-stone-700">사업목적 중에는 최소 자본금 제한 등 인허가 요건이 필요한 경우가 있습니다.</p>
+          <Caution>사업목적 중에는 최소 자본금 제한 등 인허가 요건이 필요한 경우가 있습니다.</Caution>
           <PurposePicker selected={survey.industryCodes} onChange={value => update("industryCodes", value)} />
           <label className="grid gap-2 text-sm font-semibold text-stone-700">
             직접 작성할 목적 (선택)
@@ -277,7 +286,7 @@ export default function IncorporationForm() {
           <p className="text-sm leading-6 text-stone-600">선택하거나 직접 적은 항목은 사무소에서 등기 문구로 검토합니다.</p>
         </Section>
         <Section id="officers" title="임원">
-          {shareFieldsApply && <p className="text-sm leading-6 text-stone-700">주식회사 발기설립 안내 · 주주가 아닌 임원이 1인 이상 필요합니다.</p>}
+          {shareFieldsApply && <Caution>주식회사 발기설립 안내 · 주주가 아닌 임원이 1인 이상 필요합니다.</Caution>}
           <People entries={officers} onChange={setOfficers} />
         </Section>
         <Section id="shareholders" title="주주·사원">
