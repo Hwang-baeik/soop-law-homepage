@@ -1,6 +1,8 @@
 // @ts-nocheck
 // Browser-only minimal XLSX reader/writer. Type checking is intentionally disabled here
 // because CompressionStream/DecompressionStream DOM typings differ by TypeScript version.
+import { makeZip } from "./zip";
+
 export type XlsxSheet = { name: string; rows: Array<Array<string | number | boolean | null | undefined>> };
 export type ParsedXlsx = Record<string, string[][]>;
 
@@ -34,49 +36,6 @@ function columnIndex(ref: string) {
   return Math.max(0, n - 1);
 }
 
-function u16(value: number) {
-  const a = new Uint8Array(2);
-  new DataView(a.buffer).setUint16(0, value, true);
-  return a;
-}
-function u32(value: number) {
-  const a = new Uint8Array(4);
-  new DataView(a.buffer).setUint32(0, value >>> 0, true);
-  return a;
-}
-function concat(parts: Uint8Array[]) {
-  const size = parts.reduce((sum, p) => sum + p.length, 0);
-  const out = new Uint8Array(size);
-  let offset = 0;
-  for (const p of parts) { out.set(p, offset); offset += p.length; }
-  return out;
-}
-
-const crcTable = (() => {
-  const table = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[i] = c >>> 0;
-  }
-  return table;
-})();
-
-function crc32(data: Uint8Array) {
-  let c = 0xffffffff;
-  for (const b of data) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-async function deflateRaw(data: Uint8Array) {
-  if (typeof CompressionStream === "undefined") throw new Error("이 브라우저는 Excel 파일 생성을 지원하지 않습니다. 최신 Chrome/Edge에서 이용해 주세요.");
-  const stream = new CompressionStream("deflate-raw");
-  const writer = stream.writable.getWriter();
-  await writer.write(data);
-  await writer.close();
-  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
-}
-
 async function inflateRaw(data: Uint8Array) {
   if (typeof DecompressionStream === "undefined") throw new Error("이 브라우저는 Excel 파일 읽기를 지원하지 않습니다. 최신 Chrome/Edge에서 이용해 주세요.");
   const stream = new DecompressionStream("deflate-raw");
@@ -84,34 +43,6 @@ async function inflateRaw(data: Uint8Array) {
   await writer.write(data);
   await writer.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
-}
-
-async function makeZip(files: Array<{ name: string; data: Uint8Array }>) {
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
-  let offset = 0;
-  for (const file of files) {
-    const name = te.encode(file.name);
-    const data = file.data;
-    const crc = crc32(data);
-    const local = concat([
-      u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
-      u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), name, data,
-    ]);
-    localParts.push(local);
-    centralParts.push(concat([
-      u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0),
-      u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0),
-      u16(0), u16(0), u32(0), u32(offset), name,
-    ]));
-    offset += local.length;
-  }
-  const central = concat(centralParts);
-  const eocd = concat([
-    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
-    u32(central.length), u32(offset), u16(0),
-  ]);
-  return concat([...localParts, central, eocd]);
 }
 
 function worksheetXml(rows: XlsxSheet["rows"]) {
@@ -160,7 +91,7 @@ export async function createXlsxBlob(sheets: XlsxSheet[]) {
     { name: "docProps/app.xml", data: te.encode(app) },
     ...sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: te.encode(worksheetXml(s.rows)) })),
   ];
-  return new Blob([await makeZip(files)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return new Blob([makeZip(files)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
 
 async function unzip(buffer: ArrayBuffer) {

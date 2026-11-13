@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Resend } from "resend";
-import { addDays, isDueOfficer, seoulToday, validEmail, type NoticeCompany, type NoticeContact, type TermDeadline } from "../../../lib/term-notices";
+import { addDays, isDueOfficer, noticeSender, seoulToday, validEmail, type NoticeCompany, type NoticeContact, type TermDeadline } from "../../../lib/term-notices";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +39,7 @@ async function authorize(request: Request) {
   return db;
 }
 
-async function loadCompanies(db: Awaited<ReturnType<typeof authorize>>, today: string) {
+async function loadCompanies(db: Awaited<ReturnType<typeof authorize>>, today: string, includeOverdue = false) {
   const rows: TermDeadline[] = [];
   for (let offset = 0; ; offset += 1000) {
     const page: TermDeadline[] = await db(`rpc/list_upcoming_company_deadlines?offset=${offset}&limit=1000`, { method: "POST", body: "{}" });
@@ -47,7 +47,8 @@ async function loadCompanies(db: Awaited<ReturnType<typeof authorize>>, today: s
     if (page.length < 1000) break;
   }
   const grouped = new Map<string, NoticeCompany>();
-  for (const row of rows.filter(r => isDueOfficer(r, today))) {
+  for (const row of rows.filter(r => isDueOfficer(r, today) ||
+    (includeOverdue && r.source_type === "officer" && r.status === "active" && r.target_date && r.target_date < today))) {
     const company = grouped.get(row.company_id) || { id: row.company_id, name: row.company_name, officers: [], contacts: [], revision: "" };
     company.officers.push(row);
     grouped.set(row.company_id, company);
@@ -86,7 +87,8 @@ export async function GET(request: Request) {
   try {
     const db = await authorize(request);
     const today = seoulToday();
-    const data = await loadCompanies(db, today);
+    const includeOverdue = new URL(request.url).searchParams.get("overdue") === "1";
+    const data = await loadCompanies(db, today, includeOverdue);
     // Limit parallel database requests when many companies are due.
     for (let i = 0; i < data.companies.length; i += 10) {
       await Promise.all(data.companies.slice(i, i + 10).map(async company => { company.contacts = await contactsFor(db, company.id); }));
@@ -116,16 +118,16 @@ export async function POST(request: Request) {
     if (!body || !uuid.test(body.companyId) || !uuid.test(body.contactId) || typeof body.revision !== "string" || typeof body.subject !== "string" || typeof body.text !== "string") throw new ApiError(400, "회사·수신자·메일 내용을 확인해 주세요.");
     const subject = body.subject.trim(), text = body.text.trim();
     if (!subject || subject.length > 200 || /[\r\n\x00-\x1f\x7f]/.test(subject) || !text || text.length > 10000 || text.includes("\0")) throw new ApiError(400, "제목은 한 줄 200자, 본문은 10,000자 이내로 작성해 주세요.");
-    const { companies } = await loadCompanies(db, seoulToday());
+    const { companies } = await loadCompanies(db, seoulToday(), body.includeOverdue === true);
     const company = companies.find(c => c.id === body.companyId);
-    if (!company) throw new ApiError(403, "발송 가능한 담당 회사가 아니거나 45일 이내 만료 대상이 아닙니다.");
+    if (!company) throw new ApiError(403, "담당 회사 권한 또는 현재 조회 범위의 임기 정보를 확인해 주세요.");
     if (company.revision !== body.revision) throw new ApiError(409, "임기 정보가 변경되었습니다. 목록을 새로고침한 후 문구를 다시 확인해 주세요.");
     const contact = (await contactsFor(db, company.id)).find(c => c.id === body.contactId);
     if (!contact) throw new ApiError(409, "저장된 이메일 연락처를 확인해 주세요. 목록을 새로고침해 주세요.");
     // Reject a changed address rather than sending a reviewed draft to an unseen recipient.
     if (contact.value !== body.recipient) throw new ApiError(409, "수신 주소가 변경되었습니다. 목록을 새로고침해 주세요.");
     if (!process.env.RESEND_API_KEY) throw new ApiError(503, "현재 메일 발송을 이용할 수 없습니다. 문구 복사를 이용해 주세요.");
-    const payload = { from: "숲 법무사 사무소 <soop@sooplaw.com>", to: [contact.value], replyTo: "soop@sooplaw.com", subject, text };
+    const payload = { from: `숲 법무사 사무소 <${noticeSender}>`, to: [contact.value], replyTo: noticeSender, subject, text };
     const { data, error } = await new Resend(process.env.RESEND_API_KEY).emails.send(payload, { idempotencyKey: `term-notice/${digest([company.id, payload])}` });
     if (error || !data?.id) throw new ApiError(502, "메일 발송 접수를 확인하지 못했습니다. 같은 내용으로 다시 시도해 주세요.");
     return json({ message: "메일 서비스에 발송이 접수되었습니다. 실제 도착·열람 여부는 별도 확인이 필요합니다.", id: data.id });

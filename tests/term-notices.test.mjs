@@ -29,7 +29,8 @@ test('45-day inclusive window excludes overdue, day 46, unknown dates and inacti
 });
 test('draft contains every due officer and editable neutral guidance', () => {
   const draft = createNoticeDraft({ name: '테스트 법인', officers: [officer, { ...officer, title: '감사', person_name: '다른임원' }] });
-  assert.match(draft.subject, /테스트 법인/);
+  assert.equal(draft.subject, '[숲법무사사무소]_법인 임원 임기연장 안내의 건');
+  assert.match(draft.text, /테스트 법인/);
   assert.match(draft.text, /대표이사 테스트/);
   assert.match(draft.text, /감사 다른임원/);
   assert.match(draft.text, /soop@sooplaw.com/);
@@ -104,6 +105,15 @@ test('groups multiple officers by company; keeps unknown and overdue separate', 
   assert.equal(data.unknownCount, 1);
   assert.equal(data.overdueCount, 1);
   assert.equal(data.endDate, addDays(today, 45));
+});
+test('overdue export includes active officers with known past dates even without email', async () => {
+  rows = [{ ...officer, target_date: addDays(today, -1) }, { ...officer, source_id: 'unknown', target_date: null }];
+  contacts = [];
+  const query = new Request('https://sooplaw.com/api/term-notices?overdue=1', { headers: { Authorization: 'Bearer valid-token' } });
+  const data = await (await GET(query)).json();
+  assert.equal(data.companies.length, 1);
+  assert.equal(data.companies[0].officers.length, 1);
+  assert.deepEqual(data.companies[0].contacts, []);
 });
 test('missing and malformed email contacts allow drafting but prevent send', async () => {
   const body = await validBody();

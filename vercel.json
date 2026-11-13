@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/term-notices/automatic", "schedule": "0 0 * * *" }
+  ]
+}
