@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  choices, companyFields, companyTypes, emptyPerson, initialSurvey, nameResults,
+  choices, companyFields, companyTypePositions, companyTypes, emptyPerson, formatCompanyName, initialSurvey,
   roles, surveyText, UNKNOWN, validateSurvey, type Person, type Survey,
 } from "../lib/incorporation";
 import { PurposePicker } from "./incorporation-purpose-picker";
@@ -27,13 +27,13 @@ function Field({ label, value, onChange, placeholder, required, type = "text", m
   );
 }
 
-function Select({ label, value, onChange, options, disabled }: {
-  label: string; value: string; onChange: (value: string) => void; options: readonly string[]; disabled?: boolean;
+function Select({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (value: string) => void; options: readonly string[];
 }) {
   return (
     <label className="grid gap-2 text-sm font-semibold text-stone-700">
       {label}
-      <select className={inputClass + " disabled:bg-stone-100"} value={value} onChange={event => onChange(event.target.value)} disabled={disabled}>
+      <select className={inputClass} value={value} onChange={event => onChange(event.target.value)}>
         {options.map(option => <option key={option}>{option}</option>)}
       </select>
     </label>
@@ -108,7 +108,6 @@ export default function IncorporationForm() {
   const [receipt, setReceipt] = useState("");
   const [error, setError] = useState("");
   const [website, setWebsite] = useState("");
-  const [copyStatus, setCopyStatus] = useState("");
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
@@ -116,8 +115,7 @@ export default function IncorporationForm() {
   useEffect(() => { if (receipt) receiptHeading.current?.focus(); }, [receipt]);
 
   function update<Key extends keyof Survey>(key: Key, value: Survey[Key]) {
-    setSurvey(current => ({ ...current, [key]: value, ...(key === "companyType" ? { nameResult: nameResults[0] } : {}) }));
-    if (key === "companyType") setCopyStatus("");
+    setSurvey(current => ({ ...current, [key]: value }));
     setError("");
   }
 
@@ -125,9 +123,7 @@ export default function IncorporationForm() {
     setSurvey(current => ({
       ...current,
       company: { ...current.company, [key]: value },
-      ...(key === "address" || key === "companyName" ? { nameResult: nameResults[0] } : {}),
     }));
-    if (key === "companyName") setCopyStatus("");
     setError("");
   }
 
@@ -174,8 +170,8 @@ export default function IncorporationForm() {
     );
   }
 
-  const canCopyName = !!survey.company.companyName.trim() && survey.company.companyName.trim() !== UNKNOWN;
-  const canRecordResult = canCopyName && survey.companyType !== UNKNOWN && !!survey.company.address.trim() && survey.company.address.trim() !== UNKNOWN;
+  const companyName = formatCompanyName(survey.company.companyName, survey.companyType, survey.companyTypePosition);
+  const alternateName = formatCompanyName(survey.company.alternateName, survey.companyType, survey.companyTypePosition);
   const shareFieldsApply = survey.companyType === UNKNOWN || survey.companyType === "주식회사";
 
   return (
@@ -197,26 +193,14 @@ export default function IncorporationForm() {
         <Section id="company-details" title="회사 정보">
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="회사 종류" value={survey.companyType} onChange={value => update("companyType", value)} options={companyTypes} />
+            <Select label="회사 종류 표기 위치" value={survey.companyTypePosition} onChange={value => update("companyTypePosition", value)}
+              options={companyTypePositions} />
             {companyFields.slice(0, 4).map(([key, label, placeholder]) => <Field key={key} label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => updateCompany(key, value)} />)}
           </div>
-          <div className="space-y-3 rounded-xl bg-stone-50 p-4">
-            <h3 className="font-bold">동일상호 확인</h3>
-            <p className="text-sm leading-6 text-stone-700">인터넷등기소에서 ‘열람·발급 → 법인 → 상호로 검색’을 열고, 본점 소재지 관할 등기소와 회사 종류를 선택해 검색하세요. 검색 결과는 사무소에서 검토합니다.</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <a href="https://www.iros.go.kr/" target="_blank" rel="noreferrer" className={buttonClass}>인터넷등기소 열기 (새 창)</a>
-              <button type="button" disabled={!canCopyName} className={buttonClass} onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(survey.company.companyName.trim());
-                  setCopyStatus("국문상호를 복사했습니다.");
-                } catch {
-                  setCopyStatus("국문상호 입력란에서 상호를 직접 복사해 주세요.");
-                }
-              }}>국문상호 복사</button>
-              <span role="status" className="text-sm text-stone-600">{copyStatus}</span>
-            </div>
-            <Select label="직접 확인한 검색 결과 (선택)" disabled={!canRecordResult} value={survey.nameResult}
-              onChange={value => update("nameResult", value)} options={nameResults} />
-            {!canRecordResult && <p className="text-sm text-stone-600">회사 종류, 국문상호와 본점 소재지를 입력하면 검색 결과를 기록할 수 있습니다.</p>}
+          <div className="space-y-1 rounded-xl bg-stone-50 p-4 text-sm text-stone-700 [overflow-wrap:anywhere]">
+            <p>국문상호에는 회사 종류를 뺀 이름만 입력하세요. 예를 들어 ‘새봄’을 입력하면 ‘주식회사 새봄’ 또는 ‘새봄 주식회사’로 표시됩니다.</p>
+            <p>국문상호 1순위 <strong>{companyName}</strong></p>
+            {alternateName !== UNKNOWN && <p>국문상호 2순위 <strong>{alternateName}</strong></p>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {companyFields.slice(4).filter(([key]) => shareFieldsApply || (key !== "sharePrice" && key !== "authorizedShares")).map(([key, label, placeholder]) => (

@@ -2,13 +2,13 @@ import { industryNames, maximumIndustrySelections } from "./ksic";
 
 export const UNKNOWN = "미정";
 export const companyTypes = [UNKNOWN, "주식회사", "유한회사", "유한책임회사", "합명회사", "합자회사"] as const;
-export const nameResults = ["미확인", "검색 결과에 동일상호 없음", "동일상호 또는 확인할 후보 있음"] as const;
+export const companyTypePositions = ["상호 앞", "상호 뒤"] as const;
 export const roles = [UNKNOWN, "대표이사 겸 사내이사", "대표이사", "사내이사", "이사", "감사", "업무집행자", "기타"] as const;
 export const choices = [UNKNOWN, "희망", "희망하지 않음"] as const;
 export const companyFields = [
   ["companyName", "국문상호 (1순위)", "예: 새봄"],
   ["englishName", "영문상호 (선택)", "예: Saebom"],
-  ["alternateName", "국문상호 (2순위, 선택)", "중복에 대비한 상호"],
+  ["alternateName", "국문상호 (2순위, 선택)", "예: 새봄파트너스"],
   ["address", "본점 소재지", "도로명주소와 동·호수"],
   ["announcement", "공고방법", "신문명 또는 홈페이지 주소"],
   ["sharePrice", "1주의 금액 (원)", "예: 5000"],
@@ -21,7 +21,7 @@ export type Person = { role: string; name: string; share: string };
 export type Survey = {
   contactName: string; email: string; phone: string;
   company: Record<CompanyKey, string>;
-  companyType: string; nameResult: string;
+  companyType: string; companyTypePosition: string;
   industryCodes: string[]; purposes: string;
   officers: Person[]; shareholders: Person[];
   certificate: string; otp: string; representativeEmail: string;
@@ -34,7 +34,7 @@ export function initialSurvey(): Survey {
   return {
     contactName: "", email: "", phone: "",
     company: Object.fromEntries(companyFields.map(([key]) => [key, ""])) as Survey["company"],
-    companyType: UNKNOWN, nameResult: nameResults[0], industryCodes: [], purposes: "",
+    companyType: UNKNOWN, companyTypePosition: companyTypePositions[0], industryCodes: [], purposes: "",
     officers: [emptyPerson()], shareholders: [emptyPerson("주주")],
     certificate: UNKNOWN, otp: UNKNOWN, representativeEmail: "",
     notes: "", agree: false, authority: false,
@@ -109,10 +109,7 @@ export function validateSurvey(input: unknown): Survey {
       throw new Error("금액과 주식 수는 0보다 큰 정수 또는 미정으로 입력해 주세요.");
     }
   }
-  const nameResult = choice(body.nameResult, nameResults);
-  if (nameResult !== nameResults[0] && [companyType, company.companyName, company.address].some(value => !value || value === UNKNOWN)) {
-    throw new Error("상호 확인 결과를 기록하려면 회사 종류, 국문상호, 본점 소재지를 입력해 주세요.");
-  }
+  const companyTypePosition = choice(body.companyTypePosition ?? companyTypePositions[0], companyTypePositions);
 
   if (!Array.isArray(body.industryCodes) || body.industryCodes.length > maximumIndustrySelections
       || body.industryCodes.some(code => typeof code !== "string" || !industryNames.has(code))) {
@@ -131,11 +128,18 @@ export function validateSurvey(input: unknown): Survey {
     throw new Error("대표자 이메일을 확인해 주세요.");
   }
   return {
-    contactName, email, phone, company, companyType, nameResult, industryCodes,
+    contactName, email, phone, company, companyType, companyTypePosition, industryCodes,
     purposes: text(body.purposes, 4000, true), officers, shareholders,
     certificate: choice(body.certificate, choices), otp: choice(body.otp, choices),
     representativeEmail, notes: text(body.notes, 3000, true), agree: true, authority: true,
   };
+}
+
+export function formatCompanyName(name: string, companyType: string, position: string) {
+  const base = name.trim();
+  if (!base || base === UNKNOWN) return UNKNOWN;
+  if (companyType === UNKNOWN) return base;
+  return position === companyTypePositions[1] ? `${base} ${companyType}` : `${companyType} ${base}`;
 }
 
 export function surveyText(survey: Survey) {
@@ -155,8 +159,12 @@ export function surveyText(survey: Survey) {
       `회사 종류: ${survey.companyType}`,
       ...companyFields
         .filter(([key]) => survey.companyType === UNKNOWN || survey.companyType === "주식회사" || (key !== "sharePrice" && key !== "authorizedShares"))
-        .map(([key, label]) => `${label}: ${display(survey.company[key])}`),
-      `동일상호 검색 결과 (신청인 기재): ${survey.nameResult}`,
+        .map(([key, label]) => {
+          const value = key === "companyName" || key === "alternateName"
+            ? formatCompanyName(survey.company[key], survey.companyType, survey.companyTypePosition)
+            : display(survey.company[key]);
+          return `${label}: ${value}`;
+        }),
     ].join("\n"),
     ["【사업목적】", ...(purposeLines.length ? [...purposeLines, "위 각호에 부대하는 사업 일체"] : [UNKNOWN])].join("\n"),
     ["【임원】", ...peopleLines(survey.officers, false)].join("\n"),
