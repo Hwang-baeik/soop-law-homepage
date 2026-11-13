@@ -102,12 +102,18 @@ export default function SoopLawOfficeHomepage() {
                 {office.name}는 법인등기, 부동산등기, 상속절차, 민사 신청서류 작성까지
                 의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="/incorporation"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-900 px-7 text-base font-bold text-white transition hover:bg-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-900"
+                >
+                  법인 설립 의뢰하기 <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+                </Link>
                 <a
                   href="tel:02-6956-8683"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-emerald-900 px-7 text-base font-semibold text-emerald-900 transition hover:bg-emerald-50"
                 >
-                  전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
+                  전화 상담하기
                 </a>
                 <a href="#services" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-base font-semibold hover:bg-stone-100">
                   업무분야 보기
@@ -327,9 +333,6 @@ export default function SoopLawOfficeHomepage() {
                 아래 내용을 작성하면 입력하신 내용이 이메일 형식으로 정리되어 사무소 메일로 발송됩니다.
               </p>
             </div>
-            <Link href="/incorporation" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-800 px-5 text-sm font-semibold text-emerald-900 hover:bg-emerald-50">
-              법인설립 기초조사서 작성 <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
             <ConsultationForm />
           </div>
         </section>
