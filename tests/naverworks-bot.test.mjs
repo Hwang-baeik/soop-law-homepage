@@ -19,9 +19,11 @@ const env = {
   NAVERWORKS_PRIVATE_KEY: privateKey.export({ type: 'pkcs8', format: 'pem' }).replaceAll('\n', '\\n'),
   UPSTASH_REDIS_REST_URL: 'https://redis.test', UPSTASH_REDIS_REST_TOKEN: 'test-redis-secret',
   NAVERWORKS_RETRY_SECRET: 'test-retry-secret',
+  NAVERWORKS_CHANNEL_SYNC_SECRET: 'test-channel-sync-secret',
 };
 function fixture(overrides = {}) {
   const records = new Map(), pending = new Map(), delivered = [], tokens = [], expirations = new Map();
+  const channels = new Set();
   const state = { mode: 'ok', tokenFails: false, storageFails: false };
   const http = async (url, options) => {
     assert.equal(options.cache, 'no-store');
@@ -29,7 +31,15 @@ function fixture(overrides = {}) {
       if (state.storageFails) return new Response(null, { status: 503 });
       const [command, ...args] = JSON.parse(options.body);
       let result;
-      if (command === 'ZRANGE') result = [...pending].sort((a,b) => a[1]-b[1]).slice(args[1], args[2]+1).map(([key])=>key);
+      if (command === 'SADD') {
+        assert.equal(args[0], 'naverworks:123:channels');
+        for (const channel of args.slice(1)) channels.add(channel);
+      } else if (command === 'SMEMBERS') result = [...channels];
+      else if (command === 'GET') result = records.get(args[0]) ?? null;
+      else if (command === 'SET') records.set(args[0], args[1]);
+      else if (command === 'SCAN') result = ['0', [...records.keys()].filter(key => key.startsWith(args[2].slice(0, -1)))];
+      else if (command === 'MGET') result = args.map(key => records.get(key) ?? null);
+      else if (command === 'ZRANGE') result = [...pending].sort((a,b) => a[1]-b[1]).slice(args[1], args[2]+1).map(([key])=>key);
       else if (command === 'EVAL') {
         const [script, count, key, queue, ...values] = args;
         assert.equal(count, 2); assert.equal(queue, 'naverworks:123:pending');
@@ -148,12 +158,25 @@ test('welcome persists through restart and re-invitation, without task registrat
   await f.bot.accept(request(event(undefined, { type: 'join', content: undefined }))); await f.bot.drain();
   const restarted = createBot(env, f.http, () => instant);
   await restarted.accept(request(event(undefined, { type: 'join', content: undefined, issuedTime: new Date(instant+1000).toISOString() }))); await restarted.drain();
-  assert.deepEqual(f.delivered, [WELCOME]); assert.ok([...f.expirations.values()].every(ttl=>ttl===0));
+  assert.deepEqual(f.delivered, [`${WELCOME}\n\n채널 ID\nroom-a`]); assert.ok([...f.expirations.values()].every(ttl=>ttl===0));
   assert.ok(RULES.every(([keyword, reply]) => WELCOME.includes(keyword) && WELCOME.includes(reply)));
   assert.deepEqual(WELCOME.match(/^#.+$/gm), [
     '#안내완료', '#서류작성완료', '#비용확인', '#접수완료', '#등기완료', '#완료서류발송', '#채널ID',
   ]);
   assert.ok(!WELCOME.includes('자동 등록'));
+});
+test('channel registry preserves prior replies and records new invitations', async () => {
+  const f = fixture();
+  f.records.set('naverworks:123:event:old', JSON.stringify({ channelId: 'old-room' }));
+  assert.deepEqual(await f.bot.channelIds(), ['old-room']);
+  f.records.delete('naverworks:123:event:old');
+  await f.bot.accept(request(event(undefined, { type: 'join', content: undefined })));
+  assert.deepEqual(await f.bot.channelIds(), ['old-room', 'room-a']);
+  const req = new Request('https://sooplaw.com/api/naverworks/channels', {
+    headers: { Authorization: 'Bearer test-channel-sync-secret' },
+  });
+  assert.equal(f.bot.authorizedChannelSync(req), true);
+  assert.equal(f.bot.authorizedRetry(req), false);
 });
 for (const [name, data] of [
   ['ordinary text', event('안녕하세요')], ['image', event('#접수완료', { content: { type: 'image' } })],

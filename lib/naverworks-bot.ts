@@ -53,6 +53,7 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
   }
   const prefix = () => `naverworks:${required("NAVERWORKS_BOT_ID")}:`;
   const queue = () => `${prefix()}pending`;
+  const channelSet = () => `${prefix()}channels`;
   async function redis(command: (string | number)[]) {
     const response = await http(required("UPSTASH_REDIS_REST_URL"), {
       method: "POST", headers: { Authorization: `Bearer ${required("UPSTASH_REDIS_REST_TOKEN")}`, "Content-Type": "application/json" },
@@ -62,6 +63,31 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
     const result = await response.json();
     if (result.error) throw new BotError("storage_command_failed");
     return result.result;
+  }
+  async function channelIds() {
+    const migrated = `${prefix()}channels-seeded`;
+    if (!await redis(["GET", migrated])) {
+      // Preserve IDs already seen by the bot, including replies queued before this registry existed.
+      for (const kind of ["welcome", "event"]) {
+        let cursor = "0";
+        do {
+          const [next, keys] = await redis(["SCAN", cursor, "MATCH", `${prefix()}${kind}:*`, "COUNT", 200]) as [string | number, string[]];
+          cursor = String(next);
+          for (let offset = 0; offset < keys.length; offset += 100) {
+            const jobs = await redis(["MGET", ...keys.slice(offset, offset + 100)]) as (string | null)[];
+            const ids = new Set<string>();
+            for (const raw of jobs) {
+              if (!raw) continue;
+              const { channelId } = JSON.parse(raw) as Job;
+              if (typeof channelId === "string" && channelId && channelId.length <= 256) ids.add(channelId);
+            }
+            if (ids.size) await redis(["SADD", channelSet(), ...ids]);
+          }
+        } while (cursor !== "0");
+      }
+      await redis(["SET", migrated, "1"]);
+    }
+    return await redis(["SMEMBERS", channelSet()]) as string[];
   }
   function deliveryConfig() {
     for (const key of ["NAVERWORKS_CLIENT_ID", "NAVERWORKS_CLIENT_SECRET", "NAVERWORKS_SERVICE_ACCOUNT", "NAVERWORKS_PRIVATE_KEY", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) required(key);
@@ -108,7 +134,8 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
     const channelId = event.source.channelId;
     if (typeof channelId !== "string" || !channelId || channelId.length > 256) return false;
     const actions: Job[] = [];
-    if (event.type === "join") actions.push({ channelId, text: WELCOME, kind: "welcome", status: "pending" });
+    let rememberChannel = event.type === "join";
+    if (rememberChannel) actions.push({ channelId, text: `${WELCOME}\n\n채널 ID\n${channelId}`, kind: "welcome", status: "pending" });
     if (event.type === "message" && typeof event.source.userId === "string" && event.source.userId !== env.NAVERWORKS_BOT_ID && event.content?.type === "text" && typeof event.content.text === "string") {
       const hashtags = new Map<string, string>();
       for (const [, date, keyword] of event.content.text.matchAll(/(?:(?<![\p{L}\p{M}\p{N}_-])(\d{4}-\d{2}-\d{2})[ \t]+)?(#[\p{L}\p{M}\p{N}_]+)/gu)) {
@@ -121,11 +148,13 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
         actions.push({ channelId, text, kind: "message", status: "pending" });
       }
       if (hashtags.has(CHANNEL_ID_COMMAND) || hashtags.has("#채널id")) {
+        rememberChannel = true;
         actions.push({ channelId, text: `채널 ID\n${channelId}`, kind: "message", status: "pending" });
       }
     }
     if (!actions.length) return false;
     deliveryConfig();
+    if (rememberChannel) await redis(["SADD", channelSet(), channelId]);
     for (const action of actions) {
       const id = action.kind === "welcome" ? `welcome:${hash(channelId)}` : `event:${hash(JSON.stringify(event) + action.text)}`;
       await redis(["EVAL", ENQUEUE, 2, prefix() + id, queue(), JSON.stringify(action), action.kind === "welcome" ? 0 : 86400, now()]);
@@ -161,5 +190,10 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
   function authorizedRetry(request: Request) {
     return !!env.NAVERWORKS_RETRY_SECRET && safeEqual(request.headers.get("authorization") || "", `Bearer ${env.NAVERWORKS_RETRY_SECRET}`);
   }
-  return { accept, drain, authorizedRetry };
+  function authorizedChannelSync(request: Request) {
+    return !!env.NAVERWORKS_CHANNEL_SYNC_SECRET && safeEqual(
+      request.headers.get("authorization") || "", `Bearer ${env.NAVERWORKS_CHANNEL_SYNC_SECRET}`,
+    );
+  }
+  return { accept, drain, authorizedRetry, authorizedChannelSync, channelIds };
 }
