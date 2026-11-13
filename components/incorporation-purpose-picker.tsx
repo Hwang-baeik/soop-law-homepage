@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { industryGroups, industryNames, matchesIndustry, maximumIndustrySelections } from "../lib/ksic";
+import { industryGroups, industryLevels, industryNames, matchesIndustry, maximumIndustrySelections } from "../lib/ksic";
 
 const controlClass = "min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base text-stone-950 focus-visible:outline-2 focus-visible:outline-emerald-800";
 
 export function PurposePicker({ selected, onChange }: { selected: string[]; onChange: (codes: string[]) => void }) {
   const [category, setCategory] = useState("");
+  const [level, setLevel] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 24;
   const results = industryGroups
     .filter(group => !category || group.code === category)
-    .flatMap(group => group.industries.filter(entry => matchesIndustry(entry, query)));
+    .flatMap(group => group.industries.filter(entry => (!level || String(entry.code.length) === level) && matchesIndustry(entry, query)));
   const displayed = results.slice((page - 1) * pageSize, page * pageSize);
   const pageCount = Math.ceil(results.length / pageSize);
 
@@ -20,8 +21,8 @@ export function PurposePicker({ selected, onChange }: { selected: string[]; onCh
 
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-6 text-stone-700">한국표준산업분류 제11차 세분류입니다. 업종명, 관련 업종 또는 분류코드로 검색하고 여러 항목을 선택할 수 있습니다.</p>
-      <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+      <p className="text-sm leading-6 text-stone-700">한국표준산업분류 제11차 소분류·세분류·세세분류에서 여러 항목을 선택할 수 있습니다.</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
         <label className="grid gap-2 text-sm font-semibold text-stone-700">
           업종 카테고리
           <select className={controlClass} value={category} onChange={event => { setCategory(event.target.value); setPage(1); }}>
@@ -30,10 +31,17 @@ export function PurposePicker({ selected, onChange }: { selected: string[]; onCh
           </select>
         </label>
         <label className="grid gap-2 text-sm font-semibold text-stone-700">
+          분류 단계
+          <select className={controlClass} value={level} onChange={event => { setLevel(event.target.value); setPage(1); }}>
+            <option value="">모든 분류 단계</option>
+            {industryLevels.map(({ digits, name }) => <option value={digits} key={digits}>{name} ({digits}자리)</option>)}
+          </select>
+        </label>
+        <label className="grid gap-2 text-sm font-semibold text-stone-700 sm:col-span-2 lg:col-span-1">
           업종 검색
           <input className={controlClass} type="search" value={query} onChange={event => { setQuery(event.target.value); setPage(1); }}
             onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
-            maxLength={100} placeholder="예: 쇼핑몰, 소프트웨어, 6201" />
+            maxLength={100} placeholder="예: 전자상거래, 479, 4791, 47912" />
         </label>
       </div>
       <div className="rounded-xl border border-stone-200 p-3 sm:p-4">
@@ -45,7 +53,10 @@ export function PurposePicker({ selected, onChange }: { selected: string[]; onCh
               return <li key={code}>
                 <label className="flex min-h-11 items-start gap-2 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-900 has-checked:bg-emerald-50">
                   <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-emerald-900" checked={checked} disabled={!checked && selected.length >= maximumIndustrySelections} onChange={() => toggle(code)} />
-                  <span><span className="mr-1 text-stone-500">{code}</span> {name}</span>
+                  <span>
+                    <span className="mr-1 text-stone-600">{code}</span> {name}
+                    <span className="block text-xs text-stone-600">{industryLevels[code.length - 3].name}</span>
+                  </span>
                 </label>
               </li>;
             })}

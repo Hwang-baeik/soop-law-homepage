@@ -28,20 +28,24 @@ const example = () => {
   return {
     ...empty, contactName: "담당자", email: "example@example.com", phone: "010-1234-5678",
     company: { ...empty.company, companyName: "새봄", address: "서울 성동구", englishName: "Saebom" },
-    companyType: "주식회사", companyTypePosition: "상호 뒤", industryCodes: ["4791", "5822"], agree: true, authority: true,
+    companyType: "주식회사", companyTypePosition: "상호 뒤", industryCodes: ["479", "4791", "47912"], agree: true, authority: true,
   };
 };
 
-test("shows official four-digit codes and searches by colloquial term or detailed classification", () => {
+test("includes all three classification levels and searches names and code prefixes", () => {
   assert.equal(industryGroups.length, 21);
-  assert.equal(industryNames.size, 501);
-  const retail = industryGroups.find(group => group.code === "G").industries.find(entry => entry.code === "4791");
-  assert.equal(retail.name, "통신 판매업");
-  for (const query of ["쇼핑몰", "47912", "전자상거래 소매업", "통신판매업"]) {
-    assert.ok(matchesIndustry(retail, query), query);
+  const entries = industryGroups.flatMap(group => group.industries);
+  const codes = query => entries.filter(entry => matchesIndustry(entry, query)).map(entry => entry.code);
+  assert.equal(industryNames.size, 1940);
+  assert.deepEqual([3, 4, 5].map(length => entries.filter(entry => entry.code.length === length).length), [234, 501, 1205]);
+  assert.equal(industryNames.get("011"), "작물 재배업");
+  assert.deepEqual(codes("47912"), ["47912"]);
+  assert.deepEqual(codes("４７９１２"), ["47912"]);
+  assert.deepEqual(codes("4791"), ["4791", "47911", "47912", "47919"]);
+  for (const query of ["쇼핑몰", "전자상거래 소매업"]) {
+    assert.ok(["479", "4791", "47912"].every(code => codes(query).includes(code)), query);
   }
-  const software = industryGroups.find(group => group.code === "J").industries.find(entry => entry.code === "6201");
-  assert.ok(matchesIndustry(software, "62010"));
+  assert.deepEqual(codes("62010"), ["62010"]);
 });
 
 test("accepts undecided fields and rejects fabricated codes, sensitive text and invalid share totals", () => {
@@ -49,7 +53,7 @@ test("accepts undecided fields and rejects fabricated codes, sensitive text and 
   assert.match(surveyText(validateSurvey(survey)), /공고방법: 미정/);
   for (const change of [
     { industryCodes: ["9999"] },
-    { industryCodes: ["47912"] },
+    { industryCodes: ["47913"] },
     { notes: "９９０１０１–１２３４５６７" },
     { purposes: "비밀번호: secret" },
     { agree: false },
@@ -116,7 +120,7 @@ test("checks request protections and sends only organized mail to the office", a
     assert.match(receipt, /^SOOP-[0-9A-F]{12}$/);
     assert.deepEqual(sent[0].payload.to, ["soop@sooplaw.com"]);
     assert.equal(sent[0].payload.replyTo, survey.email);
-    assert.match(sent[0].payload.text, /\[4791\] 통신 판매업/);
+    assert.match(sent[0].payload.text, /\[479\] 무점포 소매업\n\[4791\] 통신 판매업\n\[47912\] 전자상거래 소매업/);
     assert.match(sent[0].payload.text, /국문상호 \(1순위\): 새봄 주식회사\n/);
     assert.doesNotMatch(sent[0].payload.text, /동일상호/);
     assert.match(sent[0].payload.text, new RegExp(receipt));
