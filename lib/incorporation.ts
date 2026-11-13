@@ -5,6 +5,7 @@ export const companyTypes = [UNKNOWN, "주식회사", "유한회사", "유한책
 export const companyTypePositions = ["상호 앞", "상호 뒤"] as const;
 export const roles = [UNKNOWN, "대표이사 겸 사내이사", "대표이사", "사내이사", "이사", "감사", "업무집행자", "기타"] as const;
 export const choices = [UNKNOWN, "희망", "희망하지 않음"] as const;
+export const defaultBankCertificateHolder = "발기인 중 법인의 대표자가 될 사람";
 export const companyFields = [
   ["companyName", "국문상호 (1순위)", "예: 새봄"],
   ["englishName", "영문상호 (선택)", "예: Saebom"],
@@ -14,10 +15,11 @@ export const companyFields = [
   ["sharePrice", "1주의 금액 (원)", "예: 5000"],
   ["authorizedShares", "발행할 주식의 총수 (주)", "예: 1000000"],
   ["capital", "자본금 (원)", "예: 5000000"],
-  ["bank", "잔고증명서 발행은행·지점", "예: OO은행 성수지점"],
+  ["bank", "잔고증명서 발급은행·지점", "예: OO은행 성수지점"],
+  ["bankCertificateHolder", "잔고증명서 발급인", "예: 발급받을 계좌 명의인의 성명"],
 ] as const;
 type CompanyKey = (typeof companyFields)[number][0];
-export type Person = { role: string; name: string; share: string };
+export type Person = { role: string; name: string; share: string; minor?: boolean; fatherName?: string; motherName?: string };
 export type Survey = {
   contactName: string; email: string; phone: string;
   company: Record<CompanyKey, string>;
@@ -81,7 +83,16 @@ function people(value: unknown, shareholder: boolean) {
     if (share && share !== UNKNOWN && (!/^\d{1,3}(\.\d{1,4})?$/.test(share) || Number(share) > 100)) {
       throw new Error("지분율은 0~100 사이의 숫자 또는 미정으로 입력해 주세요.");
     }
-    return { role, name, share };
+    if (!shareholder) return { role, name, share };
+    if (person.minor !== undefined && typeof person.minor !== "boolean") {
+      throw new Error("주주의 미성년자 선택을 확인해 주세요.");
+    }
+    if (!person.minor) return { role, name, share };
+    return {
+      role, name, share, minor: true,
+      fatherName: text(person.fatherName ?? "", 60),
+      motherName: text(person.motherName ?? "", 60),
+    };
   });
 }
 
@@ -98,7 +109,9 @@ export function validateSurvey(input: unknown): Survey {
   }
 
   const rawCompany = record(body.company);
-  const company = Object.fromEntries(companyFields.map(([key]) => [key, text(rawCompany[key], 300)])) as Survey["company"];
+  const company = Object.fromEntries(companyFields.map(([key]) => [
+    key, key === "bankCertificateHolder" ? text(rawCompany[key] ?? "", 60) : text(rawCompany[key], 300),
+  ])) as Survey["company"];
   const companyType = choice(body.companyType, companyTypes);
   if (companyType !== UNKNOWN && companyType !== "주식회사") {
     company.sharePrice = "";
@@ -149,7 +162,10 @@ export function surveyText(survey: Survey) {
   const peopleLines = (entries: Person[], shareholder: boolean) => entries.map((person, index) => {
     const name = display(person.name);
     const detail = shareholder ? `지분율 ${person.share && person.share !== UNKNOWN ? person.share + "%" : UNKNOWN}` : `직위 ${person.role}`;
-    return `${index + 1}. ${name} · ${detail}`;
+    const guardians = shareholder && person.minor
+      ? ` · 미성년자\n   법정대리인 부: ${display(person.fatherName ?? "")}\n   법정대리인 모: ${display(person.motherName ?? "")}`
+      : "";
+    return `${index + 1}. ${name} · ${detail}${guardians}`;
   });
   return [
     "법인설립 기초조사서",
@@ -162,7 +178,9 @@ export function surveyText(survey: Survey) {
         .map(([key, label]) => {
           const value = key === "companyName" || key === "alternateName"
             ? formatCompanyName(survey.company[key], survey.companyType, survey.companyTypePosition)
-            : display(survey.company[key]);
+            : key === "bankCertificateHolder" && !survey.company[key]
+              ? `${defaultBankCertificateHolder} 명의로 지정 예정`
+              : display(survey.company[key]);
           return `${label}: ${value}`;
         }),
     ].join("\n"),
@@ -171,6 +189,6 @@ export function surveyText(survey: Survey) {
     ["【주주·사원】", ...peopleLines(survey.shareholders, true)].join("\n"),
     `【전자증명서】\n발급 희망: ${survey.certificate}\n대표자 이메일: ${display(survey.representativeEmail)}\n기기형 OTP: ${survey.otp}`,
     `【기타 요청사항】\n${display(survey.notes)}`,
-    "개인정보 수집·이용 및 제3자 정보 제공 권한 확인: 동의함\n동의 안내 버전: incorporation-v2",
+    "개인정보 수집·이용 및 제3자 정보 제공 권한 확인: 동의함\n동의 안내 버전: incorporation-v3",
   ].join("\n\n");
 }

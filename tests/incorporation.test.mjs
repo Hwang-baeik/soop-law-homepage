@@ -74,6 +74,21 @@ test("formats both Korean names in the selected order and preserves undecided va
   assert.match(formatted({}), /영문상호 \(선택\): Saebom\n/);
 });
 
+test("includes certificate holder and only the legal representatives of minor shareholders", () => {
+  const survey = example();
+  const shareholder = { ...survey.shareholders[0], name: "테스트 주주", minor: true, fatherName: "테스트 부", motherName: "테스트 모" };
+  const company = { ...survey.company, bank: "미정" };
+  const formatted = surveyText(validateSurvey({ ...survey, company, shareholders: [shareholder] }));
+  assert.match(formatted, /잔고증명서 발급은행·지점: 미정/);
+  assert.match(formatted, /잔고증명서 발급인: 발기인 중 법인의 대표자가 될 사람 명의로 지정 예정/);
+  assert.match(formatted, /테스트 주주.*미성년자/);
+  assert.match(formatted, /법정대리인 부: 테스트 부\n   법정대리인 모: 테스트 모/);
+  const adult = surveyText(validateSurvey({ ...survey, company: { ...company, bankCertificateHolder: "발급 명의인" }, shareholders: [{ ...shareholder, minor: false }] }));
+  assert.match(adult, /잔고증명서 발급인: 발급 명의인/);
+  assert.doesNotMatch(adult, /테스트 부|테스트 모/);
+  assert.throws(() => validateSurvey({ ...survey, shareholders: [{ ...shareholder, fatherName: "990101-1234567" }] }), /민감한 정보/);
+});
+
 test("checks request protections and sends only organized mail to the office", async () => {
   const originalKey = process.env.RESEND_API_KEY;
   process.env.RESEND_API_KEY = "test-only";

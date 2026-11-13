@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  choices, companyFields, companyTypePositions, companyTypes, emptyPerson, formatCompanyName, initialSurvey,
+  choices, companyFields, companyTypePositions, companyTypes, defaultBankCertificateHolder, emptyPerson, formatCompanyName, initialSurvey,
   roles, surveyText, UNKNOWN, validateSurvey, type Person, type Survey,
 } from "../lib/incorporation";
 import { PurposePicker } from "./incorporation-purpose-picker";
@@ -69,16 +69,16 @@ function People({ entries, shareholder = false, onChange }: {
   return (
     <div className="space-y-3">
       {entries.map((person, index) => {
-        const update = (key: keyof Person, value: string) => onChange(entries.map(entry => entry.id === person.id ? { ...entry, [key]: value } : entry));
+        const update = (changes: Partial<Person>) => onChange(entries.map(entry => entry.id === person.id ? { ...entry, ...changes } : entry));
         const rowLabel = `${noun} ${index + 1}`;
         return (
           <fieldset key={person.id} ref={index === entries.length - 1 ? lastRow : undefined} className="rounded-xl border border-stone-200 p-3 sm:p-4">
             <legend className="px-2 text-sm font-bold text-emerald-900">{rowLabel}</legend>
             <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
-              <Field label={shareholder ? "성명 또는 법인명" : "성명"} value={person.name} onChange={value => update("name", value)} maxLength={60} />
+              <Field label={shareholder ? "성명 또는 법인명" : "성명"} value={person.name} onChange={value => update({ name: value })} maxLength={60} />
               {shareholder
-                ? <Field label="지분율 (%)" placeholder="예: 60 또는 미정" value={person.share} onChange={value => update("share", value)} maxLength={10} />
-                : <Select label="직위" value={person.role} onChange={value => update("role", value)} options={roles} />}
+                ? <Field label="지분율 (%)" placeholder="예: 60 또는 미정" value={person.share} onChange={value => update({ share: value })} maxLength={10} />
+                : <Select label="직위" value={person.role} onChange={value => update({ role: value })} options={roles} />}
               {entries.length > 1 && (
                 <button type="button" className={buttonClass + " justify-self-start"} aria-label={rowLabel + " 삭제"} onClick={() => {
                   onChange(entries.filter(entry => entry.id !== person.id));
@@ -86,6 +86,21 @@ function People({ entries, shareholder = false, onChange }: {
                 }}>삭제</button>
               )}
             </div>
+            {shareholder && (
+              <div className="mt-3 space-y-2">
+                <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-700">
+                  <input type="checkbox" className="size-4 accent-emerald-900" checked={!!person.minor}
+                    onChange={event => update(event.target.checked ? { minor: true } : { minor: false, fatherName: "", motherName: "" })} />
+                  미성년자
+                </label>
+                {person.minor && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="법정대리인 부 성명" value={person.fatherName ?? ""} onChange={value => update({ fatherName: value })} maxLength={60} />
+                    <Field label="법정대리인 모 성명" value={person.motherName ?? ""} onChange={value => update({ motherName: value })} maxLength={60} />
+                  </div>
+                )}
+              </div>
+            )}
           </fieldset>
         );
       })}
@@ -96,6 +111,41 @@ function People({ entries, shareholder = false, onChange }: {
       }}>+ {noun} 추가</button>
       {entries.length >= maximum && <p className="text-sm text-stone-600">{maximum}명까지 입력할 수 있습니다. 추가 인원이 있으면 기타 요청사항에 인원수를 알려주세요.</p>}
     </div>
+  );
+}
+
+function PreparationChecklist({ survey }: { survey: Survey }) {
+  const named = (person: Person) => person.name && person.name !== UNKNOWN;
+  const officers = survey.officers.filter(named);
+  const shareholders = survey.shareholders.filter(named);
+  const minors = survey.shareholders.filter(person => person.minor);
+  const holder = survey.company.bankCertificateHolder;
+  const officerDocuments = "개인인감도장, 개인인감증명서 1부(인터넷 발급 제외), 주민등록초본 1부(주민등록번호 뒷자리 공개)";
+  const minorDocuments = "미성년자 본인 기준 기본증명서(상세), 가족관계증명서(상세) 및 법정대리인의 도장";
+
+  return (
+    <section className="mt-6 space-y-3 rounded-xl bg-stone-50 p-4 text-sm leading-7 text-stone-700 sm:p-5">
+      <h3 className="text-lg font-bold text-stone-950">최종 필요서류</h3>
+      <p>아래 서류와 도장을 준비해 주세요. 주민등록초본은 사무소 안내에 따라 별도로 제출해 주세요.</p>
+      <ul className="list-disc space-y-2 pl-5 [overflow-wrap:anywhere]">
+        {officers.length ? officers.map((person, index) => (
+          <li key={index}><strong>{person.name} (임원)</strong> · {officerDocuments}</li>
+        )) : <li><strong>임원 각 1인</strong> · {officerDocuments}</li>}
+        {shareholders.length ? shareholders.map((person, index) => (
+          <li key={index}><strong>{person.name} (주주·사원)</strong> · 도장</li>
+        )) : <li><strong>주주·사원 각 1인</strong> · 도장</li>}
+        <li><strong>주주 중 1인의 잔고증명서</strong> · {holder ? `발급인 ${holder}` : `${defaultBankCertificateHolder} 명의로 지정 예정`}</li>
+        {minors.map((person, index) => {
+          const guardians = [person.fatherName, person.motherName].filter(name => name && name !== UNKNOWN);
+          return (
+            <li key={index}>
+              <strong>{named(person) ? `${person.name} (미성년 주주)` : "미성년 주주"}</strong> · {minorDocuments}
+              {guardians.length > 0 && ` (${guardians.join(", ")})`}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -133,8 +183,7 @@ export default function IncorporationForm() {
     setError("");
     if (!review) {
       try {
-        const withoutId = ({ name, role, share }: PersonRow) => ({ name, role, share });
-        setReview(validateSurvey({ ...survey, officers: officers.map(withoutId), shareholders: shareholders.map(withoutId) }));
+        setReview(validateSurvey({ ...survey, officers, shareholders }));
       } catch (failure) {
         setError(failure instanceof Error ? failure.message : "입력 내용을 확인해 주세요.");
       }
@@ -165,6 +214,7 @@ export default function IncorporationForm() {
         <h2 ref={receiptHeading} tabIndex={-1} className="scroll-mt-44 text-2xl font-bold">기초조사서가 접수되었습니다</h2>
         <p className="mt-3">접수번호 <strong>{receipt}</strong></p>
         <p className="mt-2 text-stone-600">사무소에서 내용을 확인한 뒤 담당자에게 연락드립니다.</p>
+        {review && <PreparationChecklist survey={review} />}
         <a href="/" className={buttonClass + " mt-5"}>홈으로 돌아가기</a>
       </section>
     );
@@ -201,18 +251,23 @@ export default function IncorporationForm() {
             <p>국문상호에는 회사 종류를 뺀 이름만 입력하세요. 예를 들어 ‘새봄’을 입력하면 ‘주식회사 새봄’ 또는 ‘새봄 주식회사’로 표시됩니다.</p>
             <p>국문상호 1순위 <strong>{companyName}</strong></p>
             {alternateName !== UNKNOWN && <p>국문상호 2순위 <strong>{alternateName}</strong></p>}
+            <p>동일한 관할 내 같은 상호가 있는 경우 상호를 변경해야 할 가능성도 있습니다.</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {companyFields.slice(4).filter(([key]) => shareFieldsApply || (key !== "sharePrice" && key !== "authorizedShares")).map(([key, label, placeholder]) => (
               <div key={key} className="space-y-2">
-                <Field label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => updateCompany(key, value)} />
+                <Field label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => updateCompany(key, value)}
+                  maxLength={key === "bankCertificateHolder" ? 60 : 300} />
                 {key === "announcement" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, "아시아경제신문")}>아시아경제신문 선택</button>}
                 {key === "authorizedShares" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, "1000000")}>1,000,000주 선택</button>}
+                {key === "bank" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, UNKNOWN)}>미정</button>}
+                {key === "bankCertificateHolder" && <p className="text-sm leading-6 text-stone-600">비워두면 {defaultBankCertificateHolder} 명의로 지정됩니다.</p>}
               </div>
             ))}
           </div>
         </Section>
         <Section id="business-purposes" title="사업목적">
+          <p className="text-sm leading-6 text-stone-700">사업목적 중에는 최소 자본금 제한 등 인허가 요건이 필요한 경우가 있습니다.</p>
           <PurposePicker selected={survey.industryCodes} onChange={value => update("industryCodes", value)} />
           <label className="grid gap-2 text-sm font-semibold text-stone-700">
             직접 작성할 목적 (선택)
@@ -222,6 +277,7 @@ export default function IncorporationForm() {
           <p className="text-sm leading-6 text-stone-600">선택하거나 직접 적은 항목은 사무소에서 등기 문구로 검토합니다.</p>
         </Section>
         <Section id="officers" title="임원">
+          {shareFieldsApply && <p className="text-sm leading-6 text-stone-700">주식회사 발기설립 안내 · 주주가 아닌 임원이 1인 이상 필요합니다.</p>}
           <People entries={officers} onChange={setOfficers} />
         </Section>
         <Section id="shareholders" title="주주·사원">
@@ -241,13 +297,9 @@ export default function IncorporationForm() {
             <textarea className={inputClass} rows={4} maxLength={3000} value={survey.notes} onChange={event => update("notes", event.target.value)}
               placeholder="예: 희망 설립 일정, 사무소에 확인하고 싶은 점" />
           </label>
-          <details className="rounded-lg bg-stone-50 p-4 text-sm leading-6 text-stone-700">
-            <summary className="cursor-pointer font-semibold">주식회사 준비서류</summary>
-            <p className="mt-2">임원 인감 관련 서류, 주주 도장, 발기인 대표 명의의 잔고증명서 등을 사무소 안내에 따라 준비해 주세요. 미성년 주주가 있다면 가족관계·기본증명서와 법정대리인 자료가 추가될 수 있습니다.</p>
-          </details>
         </Section>
         <Section id="consent" title="개인정보 수집 및 이용">
-          <p className="text-sm leading-6 text-stone-700">담당자 연락처와 입력하신 회사·사업목적, 임원·주주, 전자증명서 관련 정보를 법인설립 상담과 서류 준비를 위해 사무소 이메일로 전달합니다. 상담·업무 목적이 달성될 때까지 보유하며, 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으며, 거부 시 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a></p>
+          <p className="text-sm leading-6 text-stone-700">담당자 연락처와 입력하신 회사·사업목적, 잔고증명서 발급인 성명, 임원·주주 정보, 미성년 여부와 법정대리인 성명, 전자증명서 관련 정보를 법인설립 상담과 서류 준비를 위해 사무소 이메일로 전달합니다. 상담·업무 목적이 달성될 때까지 보유하며, 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으며, 거부 시 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a></p>
           <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.agree} onChange={event => update("agree", event.target.checked)} required />개인정보 수집 및 이용에 동의합니다. (필수)</label>
           <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.authority} onChange={event => update("authority", event.target.checked)} required />다른 사람의 정보를 입력한 경우 제공 권한과 동의를 확인했습니다. (필수)</label>
         </Section>
