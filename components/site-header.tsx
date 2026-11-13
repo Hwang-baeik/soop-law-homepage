@@ -77,6 +77,7 @@ export function SiteHeader() {
         <nav aria-label="주요 메뉴" className="hidden items-center gap-6 text-sm font-semibold text-stone-600 lg:flex">
           <Link href="/#services" className="hover:text-emerald-900">업무분야</Link>
           <Link href="/board" className="hover:text-emerald-900">실무자료실</Link>
+          <Link href="/incorporation" className="hover:text-emerald-900">법인설립 조사서</Link>
           <Link href="/#location" className="hover:text-emerald-900">오시는 길</Link>
           <Link href="/#consultation" className="hover:text-emerald-900">상담 신청</Link>
           {loggedIn && <Link href={workspaceHref} className="hover:text-emerald-900">{workspaceLabel}</Link>}
@@ -96,6 +97,7 @@ export function SiteHeader() {
       <nav aria-label="모바일 주요 메뉴" className="flex gap-1 overflow-x-auto border-t border-stone-100 px-4 py-2 text-sm font-semibold text-stone-600 lg:hidden">
         <Link href="/#services" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100">업무분야</Link>
         <Link href="/board" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100">실무자료실</Link>
+        <Link href="/incorporation" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100">법인설립 조사서</Link>
         <Link href="/#consultation" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100">상담 신청</Link>
         {loggedIn && <Link href={workspaceHref} className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100">{workspaceLabel}</Link>}
         {!loggedIn && <Link href="/signup" className="whitespace-nowrap rounded-full px-3 py-1.5 hover:bg-stone-100 sm:hidden">회원가입</Link>}

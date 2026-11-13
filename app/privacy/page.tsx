@@ -9,6 +9,10 @@ export default function PrivacyPage() {
         <p className="mt-4 text-sm leading-7 text-stone-600">숲 법무사 사무소는 회원서비스와 상담·법무 업무 제공에 필요한 범위에서 개인정보를 처리하며, 목적 달성 후에는 법령 또는 업무상 보존 의무가 있는 정보를 제외하고 지체 없이 파기하는 것을 원칙으로 합니다.</p>
 
         <div className="mt-8 grid gap-7 text-sm leading-7 text-stone-700">
+          <section className="rounded-xl bg-emerald-50 p-5">
+            <h2 className="text-lg font-extrabold text-stone-950">법인설립 기초조사서</h2>
+            <p className="mt-2">법인설립 상담과 서류 준비를 위해 담당자 성함·이메일·전화번호와 기재하신 회사 정보, 사업목적, 임원·주주(사원)의 성명·직위·지분율 및 전자증명서 발급 관련 정보를 받습니다. 주민등록번호, 생년월일, 개인 주소, 계좌번호와 비밀번호는 수집하지 않습니다. 작성 내용은 사무소 이메일로 전달되며 사이트에 자동 저장되지 않습니다. 상담·업무 목적이 달성될 때까지 보유하며 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다.</p>
+          </section>
           <section><h2 className="text-lg font-extrabold text-stone-950">1. 처리 목적</h2><p className="mt-2">회원 식별 및 로그인, 가입 승인, 회사별 접근권한 관리, 상담 및 법무업무 수행, 문서·기한 관리, 보안 및 감사기록 관리, 문의·분쟁 대응을 위해 처리합니다.</p></section>
           <section><h2 className="text-lg font-extrabold text-stone-950">2. 수집 항목</h2><p className="mt-2">회원가입 시 회사명, 가입자 성명, 법인등록번호, 연락처, 이메일을 수집합니다. 비밀번호는 인증서비스에서 암호화된 인증정보로 관리되며 사이트 운영자가 평문 비밀번호를 열람하도록 설계하지 않습니다. 회사 관리 과정에서는 임원 성명·직책·임기정보, 회사 문서 및 업무에 필요한 정보가 추가될 수 있습니다.</p></section>
           <section><h2 className="text-lg font-extrabold text-stone-950">3. 보유 및 이용기간</h2><p className="mt-2">회원정보는 회원관계가 유지되는 동안 보유합니다. 탈퇴 요청 시 서비스 접근을 즉시 중지하고, 계정정보는 보존 필요자료 검토 후 삭제합니다. 다만 법령상 보존의무, 사건처리·본인확인·분쟁대응 등 정당한 보존 필요가 있는 자료는 회원 계정정보와 분리하여 필요한 기간 동안 보관할 수 있습니다.</p></section>

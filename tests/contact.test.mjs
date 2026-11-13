@@ -39,6 +39,7 @@ globalThis.__contactSend = async (payload) => { sent.push(payload); return { err
 const routeSource = (await compile('../app/api/contact/route.ts'))
   .replace(/import .* from "next\/server";/, 'const NextResponse = { json: (data, init) => Response.json(data, init) };')
   .replace(/import .* from "resend";/, 'class Resend { emails = { send: (payload) => globalThis.__contactSend(payload) }; }')
+  .replace('"../../../lib/office-mail"', JSON.stringify(moduleUrl(await compile('../lib/office-mail.ts'))))
   .replace('"../../../lib/contact"', JSON.stringify(validationUrl));
 const { POST } = await import(moduleUrl(routeSource));
 const request = (body, contentType = 'application/json') => new Request('https://sooplaw.com/api/contact', {

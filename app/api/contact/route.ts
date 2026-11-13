@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { validateContact } from "../../../lib/contact";
+import { officeMail } from "../../../lib/office-mail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,8 +83,7 @@ ${message}
     `.trim();
 
     const { error } = await resend.emails.send({
-      from: "숲 법무사 사무소 <contact@sooplaw.com>",
-      to: ["soop@sooplaw.com"],
+      ...officeMail,
       replyTo: email,
       subject,
       html,

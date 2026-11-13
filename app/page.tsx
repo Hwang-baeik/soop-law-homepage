@@ -327,6 +327,9 @@ export default function SoopLawOfficeHomepage() {
                 아래 내용을 작성하면 입력하신 내용이 이메일 형식으로 정리되어 사무소 메일로 발송됩니다.
               </p>
             </div>
+            <Link href="/incorporation" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-emerald-800 px-5 text-sm font-semibold text-emerald-900 hover:bg-emerald-50">
+              법인설립 기초조사서 작성 <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
             <ConsultationForm />
           </div>
         </section>
