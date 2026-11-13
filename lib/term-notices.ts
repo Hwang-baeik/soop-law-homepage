@@ -10,6 +10,23 @@ export type NoticeCompany = {
 
 export const noticeSender = "soop@sooplaw.com";
 export const noticeSubject = "[숲법무사사무소]_법인 임원 임기연장 안내의 건";
+export const noticeRanges = {
+  upcoming: "만료일 오늘~45일 이내",
+  "overdue-45": "1~45일 경과",
+  "overdue-90": "46~90일 경과",
+  "overdue-135": "91~135일 경과",
+  "overdue-older": "136일 이상 경과",
+  overdue: "경과 법인 전체",
+  all: "경과 전체 및 45일 이내 예정",
+} as const;
+export type NoticeRange = keyof typeof noticeRanges;
+export const noticeBatchSize = 10;
+export type NoticeMail = { companyId: string; contactId: string; recipient: string; revision: string; subject: string; text: string };
+export type NoticeSendResult = { companyId: string; id?: string; message: string };
+
+export function isNoticeRange(value: unknown): value is NoticeRange {
+  return typeof value === "string" && Object.hasOwn(noticeRanges, value);
+}
 export function seoulToday(now = new Date()) {
   return new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
@@ -17,7 +34,27 @@ export function addDays(date: string, days: number) {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 }
 export function isDueOfficer(row: TermDeadline, today: string) {
-  return row.source_type === "officer" && row.status === "active" && Boolean(row.target_date && row.target_date >= today && row.target_date <= addDays(today, 45));
+  return isOfficerInRange(row, today, "upcoming");
+}
+export function isOfficerInRange(row: TermDeadline, today: string, range: NoticeRange) {
+  if (row.source_type !== "officer" || row.status !== "active" || !row.target_date) return false;
+  const days = (Date.parse(today) - Date.parse(row.target_date)) / 86_400_000;
+  switch (range) {
+    case "upcoming": return days >= -45 && days <= 0;
+    case "overdue-45": return days >= 1 && days <= 45;
+    case "overdue-90": return days >= 46 && days <= 90;
+    case "overdue-135": return days >= 91 && days <= 135;
+    case "overdue-older": return days >= 136;
+    case "overdue": return days > 0;
+    case "all": return days >= -45;
+  }
+}
+export function defaultNoticeContact(contacts: NoticeContact[]) {
+  const distinct = (items: NoticeContact[]) => [...new Map(items.map(c => [c.value.toLowerCase(), c])).values()];
+  const primary = distinct(contacts.filter(c => c.is_primary));
+  if (primary.length === 1) return primary[0].id;
+  const options = distinct(contacts);
+  return options.length === 1 ? options[0].id : "";
 }
 export function validEmail(value: string) {
   return value.length <= 254 && /^[^\s<>@,;]+@[^\s<>@,;]+\.[^\s<>@,;]+$/.test(value);

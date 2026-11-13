@@ -281,10 +281,12 @@ export async function rest(path: string, token: string, init?: RequestInit) {
   );
 }
 
-export async function termNoticeRequest(init?: RequestInit, includeOverdue = false) {
+export async function termNoticeRequest(init?: RequestInit, range = "upcoming", batch = false) {
   const session = getSession();
   if (!session) throw new Error("다시 로그인해 주세요.");
-  return retryAfterUnauthorized(`/api/term-notices${includeOverdue ? "?overdue=1" : ""}`, session.access_token, init || {}, { "Content-Type": "application/json" });
+  const query = new URLSearchParams({ range });
+  if (batch) query.set("batch", "1");
+  return retryAfterUnauthorized(`/api/term-notices?${query}`, session.access_token, init || {}, { "Content-Type": "application/json" });
 }
 
 export async function companyMaterialsRequest(query = "", init?: RequestInit) {

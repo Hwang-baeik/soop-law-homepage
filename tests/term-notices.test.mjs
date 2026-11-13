@@ -8,7 +8,7 @@ const compile = async path => ts.transpileModule(await fs.readFile(new URL(path,
 }).outputText;
 const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
 const helpersUrl = moduleUrl(await compile('../lib/term-notices.ts'));
-const { seoulToday, addDays, isDueOfficer, validEmail, createNoticeDraft } = await import(helpersUrl);
+const { seoulToday, addDays, isDueOfficer, isOfficerInRange, validEmail, createNoticeDraft } = await import(helpersUrl);
 const today = seoulToday();
 const companyId = '11111111-1111-4111-8111-111111111111';
 const contactId = '22222222-2222-4222-8222-222222222222';
@@ -26,6 +26,13 @@ test('45-day inclusive window excludes overdue, day 46, unknown dates and inacti
   assert.equal(isDueOfficer({ ...officer, status: 'renewed' }, today), false);
   assert.equal(isDueOfficer({ ...officer, source_type: 'term_item' }, today), false);
   assert.equal(addDays('2028-02-28', 1), '2028-02-29');
+});
+test('overdue ranges assign each boundary to exactly one interval', () => {
+  const ranges = ['overdue-45', 'overdue-90', 'overdue-135', 'overdue-older'];
+  for (const [days, expected] of [[0, -1], [1, 0], [45, 0], [46, 1], [90, 1], [91, 2], [135, 2], [136, 3], [1000, 3]]) {
+    const row = { ...officer, target_date: addDays(today, -days) };
+    assert.deepEqual(ranges.map(range => isOfficerInRange(row, today, range)), ranges.map((_, i) => i === expected));
+  }
 });
 test('draft contains every due officer and editable neutral guidance', () => {
   const draft = createNoticeDraft({ name: '테스트 법인', officers: [officer, { ...officer, title: '감사', person_name: '다른임원' }] });
@@ -94,7 +101,7 @@ test('clients, pending/suspended and temporary-password accounts cannot send', a
 test('database denial including missing MFA/deadline rights stops all mail', async () => {
   rpcDenied = true;
   assert.equal((await GET(request())).status, 403);
-  assert.equal((await POST(request({ companyId, contactId, revision: 'x', subject: 'a', text: 'b' }))).status, 403);
+  assert.equal((await POST(request({ companyId, contactId, recipient: contact.value, revision: 'x', subject: 'a', text: 'b' }))).status, 403);
   assert.equal(sent.length, 0);
 });
 test('groups multiple officers by company; keeps unknown and overdue separate', async () => {
@@ -114,6 +121,33 @@ test('overdue export includes active officers with known past dates even without
   assert.equal(data.companies.length, 1);
   assert.equal(data.companies[0].officers.length, 1);
   assert.deepEqual(data.companies[0].contacts, []);
+});
+test('batch sends only reviewed addresses, reports partial outcomes and uses stable retry keys', async () => {
+  const range = 'overdue-older';
+  const company2 = '33333333-3333-4333-8333-333333333333';
+  rows = [
+    { ...officer, target_date: addDays(today, -140) },
+    { ...officer, company_id: company2, source_id: 'officer-2', target_date: addDays(today, -150) },
+    { ...officer, source_id: 'too-recent', target_date: addDays(today, -135) },
+  ];
+  const url = 'https://sooplaw.com/api/term-notices?range=' + range;
+  const headers = { Authorization: 'Bearer valid-token', 'Content-Type': 'application/json' };
+  const { companies } = await (await GET(new Request(url, { headers }))).json();
+  assert.equal(companies.length, 2);
+  assert.ok(companies.every(company => company.officers.length === 1));
+  const mails = companies.map(company => ({ companyId: company.id, contactId, recipient: company.id === company2 ? 'changed@example.com' : contact.value, revision: company.revision, subject: '검토한 안내', text: '검토한 본문' }));
+  const send = (list, selectedRange = range) => POST(new Request(url + '&batch=1', { headers, method: 'POST', body: JSON.stringify({ range: selectedRange, mails: list }) }));
+  assert.equal((await send([mails[0], mails[0]])).status, 400);
+  assert.equal(sent.length, 0);
+  const { results } = await (await send(mails)).json();
+  assert.equal(results.find(item => item.companyId === companyId).id, 'provider-accepted-id');
+  assert.match(results.find(item => item.companyId === company2).message, /수신 주소가 변경/);
+  assert.equal(sent.length, 1);
+  await send(mails.filter(mail => mail.companyId === companyId));
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0].options.idempotencyKey, sent[1].options.idempotencyKey);
+  await send(mails, 'overdue-135');
+  assert.equal(sent.length, 2);
 });
 test('missing and malformed email contacts allow drafting but prevent send', async () => {
   const body = await validBody();
