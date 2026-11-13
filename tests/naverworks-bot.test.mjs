@@ -94,7 +94,7 @@ for (const [keyword, reply] of RULES) test(`responds to ${keyword} inside a sent
   assert.ok([...f.expirations.values()].every(ttl => ttl === 86400));
 });
 test('each keyword appears only once in a reply batch; all distinct keywords are handled', async () => {
-  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 (#완료서류발송) #비용확인 #안내완료 #서류작성완료'))); await f.bot.drain();
+  const f = fixture(); await f.bot.accept(request(event('#접수완료 #접수완료 #등기완료 (#완료서류발송) #비용확인 #안내완료 #서류작성완료 #채널ID #채널id'))); await f.bot.drain();
   assert.deepEqual(f.delivered, [
     '정보 취합 후 서류작성 해야합니다.',
     '날인 및 접수준비를 해야합니다.',
@@ -102,7 +102,18 @@ test('each keyword appears only once in a reply batch; all distinct keywords are
     '완료, 보정 등 대기 중입니다.',
     '등기완료서류 준비를 해야합니다.',
     '업무 정리를 해야합니다.',
+    '채널 ID\nroom-a',
   ]);
+});
+test('returns the signed event channel once to that same room', async () => {
+  const f = fixture();
+  const command = event('이 방의 #채널ID 확인 부탁합니다.');
+  await f.bot.accept(request(command));
+  await f.bot.accept(request(command));
+  await f.bot.drain();
+  assert.deepEqual(f.delivered, ['채널 ID\nroom-a']);
+  assert.equal(await f.bot.accept(request(event('#채널ID', { source: { userId: 'employee' } }))), false);
+  assert.equal(await f.bot.accept(request(event('#채널ID설정'))), false);
 });
 test('each reply starts with the date immediately before its hashtag, when present', async () => {
   const f = fixture();
@@ -140,7 +151,7 @@ test('welcome persists through restart and re-invitation, without task registrat
   assert.deepEqual(f.delivered, [WELCOME]); assert.ok([...f.expirations.values()].every(ttl=>ttl===0));
   assert.ok(RULES.every(([keyword, reply]) => WELCOME.includes(keyword) && WELCOME.includes(reply)));
   assert.deepEqual(WELCOME.match(/^#.+$/gm), [
-    '#안내완료', '#서류작성완료', '#비용확인', '#접수완료', '#등기완료', '#완료서류발송',
+    '#안내완료', '#서류작성완료', '#비용확인', '#접수완료', '#등기완료', '#완료서류발송', '#채널ID',
   ]);
   assert.ok(!WELCOME.includes('자동 등록'));
 });

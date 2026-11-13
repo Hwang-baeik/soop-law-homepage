@@ -8,8 +8,10 @@ export const RULES = [
   ["#등기완료", "등기완료서류 준비를 해야합니다."],
   ["#완료서류발송", "업무 정리를 해야합니다."],
 ] as const;
+const CHANNEL_ID_COMMAND = "#채널ID";
 export const WELCOME = "업무 안내 봇입니다. 아래 키워드가 포함된 메시지를 보내면 다음 할 일을 안내합니다.\n\n"
   + RULES.map(([keyword, reply]) => `${keyword}\n→ ${reply}`).join("\n\n")
+  + `\n\n${CHANNEL_ID_COMMAND}\n→ 현재 메시지방의 채널 ID를 알려드립니다.`
   + "\n\n이 안내는 대화방별 최초 1회만 발송합니다.";
 
 type Environment = Record<string, string | undefined>;
@@ -118,6 +120,9 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
         const text = date ? `${date} ${keyword} · ${reply}` : reply;
         actions.push({ channelId, text, kind: "message", status: "pending" });
       }
+      if (hashtags.has(CHANNEL_ID_COMMAND) || hashtags.has("#채널id")) {
+        actions.push({ channelId, text: `채널 ID\n${channelId}`, kind: "message", status: "pending" });
+      }
     }
     if (!actions.length) return false;
     deliveryConfig();
@@ -129,7 +134,7 @@ export function createBot(env: Environment = process.env, http: typeof fetch = f
   }
   async function drain() {
     // Acquire credentials before claiming jobs: authentication outages remain recoverable.
-    const jobs = await redis(["ZRANGE", queue(), 0, RULES.length - 1]) as string[];
+    const jobs = await redis(["ZRANGE", queue(), 0, RULES.length]) as string[];
     if (!jobs.length) return;
     const bearer = await accessToken();
     for (const key of jobs) {
