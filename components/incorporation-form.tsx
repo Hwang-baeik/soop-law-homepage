@@ -1,150 +1,339 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { companyFields, electronicFields, emptyPerson, freeSurveyText, initialSurvey, surveyText, validateFreeSurvey, validateSurvey, FREE_TEXT_MAX_LENGTH, UNKNOWN, type Person, type Survey, type SurveyMode } from "../lib/incorporation";
-const secondaryClass = "inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 px-5 py-2 text-sm font-semibold text-emerald-900 hover:bg-stone-50 disabled:opacity-50";
-const inputClass = "w-full rounded-xl border border-stone-300 bg-white px-3 py-3 text-base font-normal text-stone-900 outline-none focus:border-emerald-800 focus:ring-2 focus:ring-emerald-100 disabled:bg-stone-100 disabled:text-stone-500";
-const basicCompanyKeys = new Set(["companyName", "address", "capital"]);
-function Field({ label, value, onChange, placeholder, required = false, multiline = false, maxLength = 500 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; required?: boolean; multiline?: boolean; maxLength?: number }) {
-  const previous = useRef("");
-  return <div className="grid content-start gap-2"><label className="grid gap-2 text-sm font-semibold text-stone-700"><span>{label}{required && <span className="text-red-700"> *</span>}</span>{multiline ? <textarea className={inputClass} rows={5} value={value === UNKNOWN ? "" : value} disabled={value === UNKNOWN} onChange={e => onChange(e.target.value)} placeholder={value === UNKNOWN ? UNKNOWN : placeholder} maxLength={maxLength} /> : <input className={inputClass} value={value === UNKNOWN ? "" : value} disabled={value === UNKNOWN} onChange={e => onChange(e.target.value)} placeholder={value === UNKNOWN ? UNKNOWN : placeholder} required={required} maxLength={maxLength} />}</label>{!required && <label className="flex w-fit items-center gap-2 text-sm text-stone-500"><input type="checkbox" checked={value === UNKNOWN} onChange={e => { if (e.target.checked) { previous.current = value; onChange(UNKNOWN); } else onChange(previous.current); }} />아직 미정</label>}</div>;
-}
-function Section({ number, title, description, children }: { number: string; title: string; description?: string; children: ReactNode }) {
-  return <section className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-8"><div className="mb-6 flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-bold text-emerald-900">{number}</span><h2 className="text-xl font-bold text-stone-900">{title}</h2></div>{description && <p className="mb-6 text-sm leading-6 text-stone-500">{description}</p>}{children}</section>;
-}
-function People({ people, shareholder, onChange }: { people: Person[]; shareholder: boolean; onChange: (p: Person[]) => void }) {
-  function update(index: number, key: keyof Person, v: string) { onChange(people.map((p, i) => i === index ? { ...p, [key]: v } : p)); }
-  return <div className="space-y-5">{people.map((p, i) => <fieldset key={i} className="rounded-xl border border-stone-200 p-4 sm:p-5"><legend className="px-2 font-semibold text-emerald-900">{shareholder ? "주주" : "임원"} {i + 1}</legend><div className="grid gap-5 sm:grid-cols-2">{!shareholder && <label className="grid gap-2 text-sm font-semibold text-stone-700">직위<select className={inputClass} value={p.role} onChange={e => update(i, "role", e.target.value)}>{["미정", "대표이사 겸 사내이사", "사내이사", "감사", "기타"].map(role => <option key={role}>{role}</option>)}</select></label>}<Field label="성명" value={p.name} onChange={v => update(i, "name", v)} maxLength={60} /><Field label="생년월일" placeholder="YYYY-MM-DD (주민등록번호 입력 금지)" value={p.birthDate} onChange={v => update(i, "birthDate", v)} maxLength={10} /><Field label="주소" placeholder="도로명주소와 동·호수" value={p.address} onChange={v => update(i, "address", v)} />{shareholder && <Field label="지분율 (%)" placeholder="예: 60 / 확정된 경우 합계 100%" value={p.share} onChange={v => update(i, "share", v)} maxLength={10} />}</div>{people.length > 1 && <button type="button" onClick={() => onChange(people.filter((_, index) => i !== index))} className="mt-4 text-sm text-stone-600 underline">{shareholder ? "주주" : "임원"} {i + 1} 삭제</button>}</fieldset>)}<button type="button" className={secondaryClass} disabled={people.length >= (shareholder ? 20 : 10)} onClick={() => onChange([...people, emptyPerson(shareholder ? "주주" : "미정")])}>+ {shareholder ? "주주" : "임원"} 추가</button><p className="text-xs text-stone-500">{shareholder ? "주주 20명" : "임원 10명"}까지 입력 가능합니다. 더 많은 경우 기타 요청사항에 알려주세요.</p></div>;
-}
-export default function IncorporationForm() {
-  const [survey, setSurvey] = useState<Survey>(initialSurvey);
-  const [mode, setMode] = useState<SurveyMode>("free");
-  const [freeText, setFreeText] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false), [sent, setSent] = useState(false);
-  const [message, setMessage] = useState(""), [website, setWebsite] = useState("");
-  const submission = useRef<{ serialized: string; id: string } | null>(null);
-  const resultRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (preview) { resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); resultRef.current?.focus({ preventScroll: true }); } }, [preview]);
-  function update<K extends keyof Survey>(key: K, value: Survey[K]) { setSurvey(p => ({ ...p, [key]: value })); setMessage(""); }
-  function changeMode(nextMode: SurveyMode) {
-    if (nextMode === mode) return;
-    setMode(nextMode);
-    setSurvey(current => ({ ...current, agree: false, authority: false }));
-    setMessage("");
-  }
 
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); if (busy || sent) return;
-    setMessage("");
-    let validated: Survey | ReturnType<typeof validateFreeSurvey>;
-    try {
-      const { contactName, email, phone, agree } = survey;
-      validated = mode === "free"
-        ? validateFreeSurvey({ contactName, email, phone, agree, freeText })
-        : validateSurvey(survey);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "입력 내용을 확인해 주세요.");
-      return;
-    }
-    if (!preview) {
-      setPreview("freeText" in validated ? freeSurveyText(validated) : surveyText(validated));
-      return;
-    }
-    if (!validated.agree) {
-      setMessage("개인정보 수집 및 이용에 동의해 주세요.");
-      return;
-    }
-    const payload = { mode, survey: validated };
-    const serialized = JSON.stringify(payload);
-    if (!submission.current || submission.current.serialized !== serialized) submission.current = { serialized, id: crypto.randomUUID() };
-    setBusy(true);
-    try {
-      const response = await fetch("/api/incorporation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, website, requestId: submission.current.id }), signal: AbortSignal.timeout(30000) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "접수하지 못했습니다. 다시 시도해 주세요.");
-      setSent(true); setMessage(`${result.message} 접수번호: ${result.receipt}`);
-    } catch (error) { setMessage(error instanceof Error && error.name !== "TimeoutError" ? error.message : "접수 결과를 확인하지 못했습니다. 입력 내용을 유지한 채 다시 시도하거나 사무소에 연락해 주세요."); }
-    finally { setBusy(false); }
-  }
-  if (sent) return <div className="rounded-2xl border border-emerald-200 bg-white p-8" role="status"><p className="text-sm font-semibold text-emerald-800">전송 완료</p><h2 className="mt-3 text-2xl font-bold">기초조사서가 접수되었습니다.</h2><p className="mt-4 break-words leading-7 text-stone-600">{message}</p><a href="/" className={secondaryClass + " mt-6"}>홈으로 돌아가기</a></div>;
-  return <form onSubmit={submit} className="space-y-6" autoComplete="off">
-    <div className="rounded-2xl bg-emerald-950 p-6 text-white">
-      <p className="font-semibold">정해진 내용부터 편하게 적어주세요.</p>
-      <p className="mt-2 text-sm leading-7 text-emerald-50">자유롭게 설명하거나 항목별로 작성할 수 있습니다. 담당자 연락처는 꼭 입력해 주세요.</p>
-      <p className="mt-2 text-xs leading-6 text-emerald-100">페이지를 닫거나 새로고침하면 입력 내용이 사라집니다.</p>
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  choices, companyFields, companyTypePositions, companyTypes, defaultBankCertificateHolder, emptyPerson, formatCompanyName, initialSurvey,
+  roles, surveyText, UNKNOWN, validateSurvey, type Person, type Survey,
+} from "../lib/incorporation";
+import { PurposePicker } from "./incorporation-purpose-picker";
+
+const inputClass = "min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-base font-normal text-stone-950 focus:border-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-200";
+const buttonClass = "inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 px-4 text-sm font-semibold text-emerald-900 hover:bg-emerald-50 disabled:opacity-50";
+const sections = [
+  ["contact-details", "담당자"], ["company-details", "회사 정보"], ["business-purposes", "사업목적"],
+  ["officers", "임원"], ["shareholders", "주주·사원"], ["certificate", "전자증명서"], ["notes", "기타"],
+] as const;
+
+function Field({ label, value, onChange, placeholder, required, type = "text", maxLength = 300 }: {
+  label: string; value: string; onChange: (value: string) => void; placeholder?: string;
+  required?: boolean; type?: "text" | "email" | "tel"; maxLength?: number;
+}) {
+  return (
+    <label className="grid content-start gap-2 text-sm font-semibold text-stone-700">
+      <span>{label}{required && <span className="text-red-700"> (필수)</span>}</span>
+      <input className={inputClass} type={type} value={value} onChange={event => onChange(event.target.value)}
+        placeholder={placeholder} required={required} maxLength={maxLength} />
+    </label>
+  );
+}
+
+function Select({ label, value, onChange, options }: {
+  label: string; value: string; onChange: (value: string) => void; options: readonly string[];
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-stone-700">
+      {label}
+      <select className={inputClass} value={value} onChange={event => onChange(event.target.value)}>
+        {options.map(option => <option key={option}>{option}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-44 space-y-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
+      <h2 className="text-xl font-bold text-stone-950">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Caution({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl border-l-4 border-yellow-300 bg-red-950 px-4 py-3 text-yellow-100">
+      <p className="font-bold text-yellow-300">주의사항</p>
+      <p className="mt-1 text-base font-semibold leading-7">{children}</p>
     </div>
-    <fieldset disabled={busy} className="space-y-6 disabled:opacity-70">
-    {!preview ? <>
-      <Section number="01" title="담당자 연락처" description="조사서 확인과 추가 안내를 위한 연락처입니다. 이 세 항목은 미정으로 접수할 수 없습니다."><div className="grid gap-5 sm:grid-cols-3"><Field required label="담당자 성함" value={survey.contactName} onChange={v => update("contactName", v)} maxLength={60} /><Field required label="이메일" value={survey.email} onChange={v => update("email", v)} maxLength={254} /><Field required label="연락처" value={survey.phone} onChange={v => update("phone", v)} maxLength={30} /></div></Section>
-      <div role="group" aria-label="작성 방식" className="flex flex-wrap gap-2">
-        <button type="button" className={secondaryClass + " aria-pressed:border-emerald-800 aria-pressed:bg-emerald-100"} aria-pressed={mode === "free"} onClick={() => changeMode("free")}>자유롭게 작성하기</button>
-        <button type="button" className={secondaryClass + " aria-pressed:border-emerald-800 aria-pressed:bg-emerald-100"} aria-pressed={mode === "structured"} onClick={() => changeMode("structured")}>항목별로 작성하기</button>
-      </div>
-      {mode === "free" ? (
-        <Section number="02" title="설립 계획" description="회사 이름, 하려는 사업, 자본금 등 정해진 내용을 편하게 적어주세요. 궁금한 점도 함께 적을 수 있습니다.">
-          <label htmlFor="incorporation-free-text" className="text-sm font-semibold text-stone-700">자유 작성 내용 <span className="font-normal text-stone-500">(선택)</span></label>
-          <textarea
-            id="incorporation-free-text"
-            aria-describedby="incorporation-free-help"
-            className={inputClass + " mt-2"}
-            rows={8}
-            maxLength={FREE_TEXT_MAX_LENGTH}
-            placeholder="예: 온라인 쇼핑몰을 운영할 예정입니다. 상호는 주식회사 새봄, 자본금은 500만 원으로 생각하고 있습니다. 본점 주소와 임원은 아직 미정입니다."
-            value={freeText}
-            onChange={event => { setFreeText(event.target.value); setMessage(""); }}
-          />
-          <p id="incorporation-free-help" className="mt-2 text-sm leading-6 text-stone-600">정해진 내용이 없으면 비워두셔도 됩니다. 주민등록번호 전체와 비밀번호는 입력하지 마세요. 필요한 정보는 사무소에서 별도로 확인합니다.</p>
-        </Section>
-      ) : <>
-      <Section number="02" title="정해진 회사 정보" description="확정된 항목만 입력해 주세요. 빈칸은 미정으로 전달됩니다.">
-        <div className="grid gap-5 sm:grid-cols-2">
-          {companyFields.filter(([key]) => basicCompanyKeys.has(key)).map(([key, label, placeholder]) => (
-            <Field key={key} label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => update("company", { ...survey.company, [key]: value })} />
-          ))}
-        </div>
-      </Section>
-      <Section number="03" title="사업목적" description="예정하신 사업을 한 줄에 하나씩 적어주세요. 구체적인 등기 문구는 사무소에서 검토합니다."><Field label="사업목적" multiline maxLength={6000} placeholder={"1. 소프트웨어 개발 및 공급업\n2. 전자상거래업"} value={survey.purposes} onChange={v => update("purposes", v)} /><p className="mt-3 text-sm text-stone-500">‘위 각호에 부대하는 사업 일체’는 함께 전달됩니다.</p></Section>
-      <details className="space-y-6 rounded-2xl border border-stone-200 bg-white p-5 sm:p-8">
-        <summary className="cursor-pointer font-semibold text-emerald-900">상세 정보 더 입력하기</summary>
-        <div className="grid gap-5 sm:grid-cols-2">
-          {companyFields.filter(([key]) => !basicCompanyKeys.has(key)).map(([key, label, placeholder]) => (
-            <div key={key}>
-              <Field label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => update("company", { ...survey.company, [key]: value })} />
-              {(key === "announcement" || key === "authorizedShares") && (
-                <button type="button" className="mt-2 text-sm font-semibold text-emerald-900 underline" onClick={() => update("company", { ...survey.company, [key]: key === "announcement" ? "아시아경제신문" : "1000000" })}>
-                  기본값 사용: {key === "announcement" ? "아시아경제신문" : "1,000,000주"}
-                </button>
+  );
+}
+
+type PersonRow = Person & { id: number };
+
+function People({ entries, shareholder = false, onChange }: {
+  entries: PersonRow[]; shareholder?: boolean; onChange: (entries: PersonRow[]) => void;
+}) {
+  const nextId = useRef(1);
+  const maximum = shareholder ? 20 : 10;
+  const noun = shareholder ? "주주·사원" : "임원";
+  const addButton = useRef<HTMLButtonElement>(null);
+  const focusId = useRef<number | null>(null);
+  const lastRow = useRef<HTMLFieldSetElement>(null);
+  useEffect(() => {
+    if (entries.at(-1)?.id !== focusId.current) return;
+    lastRow.current?.querySelector("input")?.focus();
+    focusId.current = null;
+  }, [entries]);
+
+  return (
+    <div className="space-y-3">
+      {entries.map((person, index) => {
+        const update = (changes: Partial<Person>) => onChange(entries.map(entry => entry.id === person.id ? { ...entry, ...changes } : entry));
+        const rowLabel = `${noun} ${index + 1}`;
+        return (
+          <fieldset key={person.id} ref={index === entries.length - 1 ? lastRow : undefined} className="rounded-xl border border-stone-200 p-3 sm:p-4">
+            <legend className="px-2 text-sm font-bold text-emerald-900">{rowLabel}</legend>
+            <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <Field label={shareholder ? "성명 또는 법인명" : "성명"} value={person.name} onChange={value => update({ name: value })} maxLength={60} />
+              {shareholder
+                ? <Field label="지분율 (%)" placeholder="예: 60 또는 미정" value={person.share} onChange={value => update({ share: value })} maxLength={10} />
+                : <Select label="직위" value={person.role} onChange={value => update({ role: value })} options={roles} />}
+              {entries.length > 1 && (
+                <button type="button" className={buttonClass + " justify-self-start"} aria-label={rowLabel + " 삭제"} onClick={() => {
+                  onChange(entries.filter(entry => entry.id !== person.id));
+                  addButton.current?.focus();
+                }}>삭제</button>
               )}
             </div>
-          ))}
-        </div>
-      <Section number="04" title="임원" description="대표이사, 사내이사, 감사 정보를 입력해주세요. 임원 구성과 주식 보유 여부는 사무소에서 함께 확인합니다."><People people={survey.officers} shareholder={false} onChange={v => update("officers", v)} /></Section>
-      <Section number="05" title="주주" description="확정된 지분율을 모두 입력하는 경우 합계가 100%인지 확인해주세요. 미확정 지분율은 미정으로 표시할 수 있습니다."><People people={survey.shareholders} shareholder onChange={v => update("shareholders", v)} /></Section>
-      <Section number="06" title="전자증명서 발급 희망사항" description="발급 희망 여부를 알려주세요. 등기소·전자증명서 비밀번호는 별도로 확인합니다."><div className="grid gap-6 sm:grid-cols-2">{electronicFields.map(([key, label, options]) => <label key={key} className="grid gap-2 text-sm font-semibold text-stone-700">{label}<select className={inputClass} value={survey[key]} onChange={e => update(key, e.target.value)}>{options.map(v => <option key={v}>{v}</option>)}</select></label>)}<Field label="대표자 이메일" value={survey.representativeEmail} onChange={v => update("representativeEmail", v)} maxLength={254} /><Field label="등기소 희망 아이디" placeholder="희망 아이디가 있다면 기재 (비밀번호 제외)" value={survey.registryId} onChange={v => update("registryId", v)} maxLength={60} /></div></Section>
-      <Section number="07" title="기타 요청사항"><Field label="전달할 내용" multiline maxLength={3000} value={survey.notes} onChange={v => update("notes", v)} placeholder="예정 일정, 추가 확인이 필요한 사항 등" /></Section>
-      </details>
-      </>}
-    </> : <section ref={resultRef} tabIndex={-1} className="scroll-mt-32 rounded-2xl border border-stone-200 bg-white p-5 sm:p-8"><h2 className="text-xl font-bold">전송 전 내용 확인</h2><p className="mt-2 text-sm text-stone-500">아래 내용을 확인한 후 사무소로 보내주세요.</p><pre className="mt-6 whitespace-pre-wrap break-words font-sans text-sm leading-7 text-stone-700">{preview}</pre><button type="button" className={secondaryClass + " mt-6"} onClick={() => { setPreview(null); setMessage(""); }}>입력 내용 수정</button></section>}
-    {mode === "free" && preview && (
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-8">
-        <h2 className="font-bold">개인정보 수집 및 이용 안내</h2>
-        <p className="mt-3 text-sm leading-7 text-stone-600">
-          담당자 성함·이메일·연락처와 자유 작성 내용은 법인설립 상담과 설립서류 작성 준비를 위해 사무소 이메일로 전달됩니다. 상담·업무 목적 달성 시까지 보유하며 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으나 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a>
-        </p>
-        <label className="mt-5 flex items-start gap-3 text-sm text-stone-700">
-          <input type="checkbox" className="mt-1" checked={survey.agree} onChange={event => update("agree", event.target.checked)} required />
-          개인정보 수집 및 이용에 동의하며, 다른 사람의 정보를 작성한 경우 제공 권한과 동의를 확인했습니다. (필수)
-        </label>
+            {shareholder && (
+              <div className="mt-3 space-y-2">
+                <label className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-700">
+                  <input type="checkbox" className="size-4 accent-emerald-900" checked={!!person.minor}
+                    onChange={event => update(event.target.checked ? { minor: true } : { minor: false, fatherName: "", motherName: "" })} />
+                  미성년자
+                </label>
+                {person.minor && (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="법정대리인 부 성명" value={person.fatherName ?? ""} onChange={value => update({ fatherName: value })} maxLength={60} />
+                    <Field label="법정대리인 모 성명" value={person.motherName ?? ""} onChange={value => update({ motherName: value })} maxLength={60} />
+                  </div>
+                )}
+              </div>
+            )}
+          </fieldset>
+        );
+      })}
+      <button ref={addButton} type="button" className={buttonClass} disabled={entries.length >= maximum} onClick={() => {
+        const id = nextId.current++;
+        focusId.current = id;
+        onChange([...entries, { ...emptyPerson(shareholder ? "주주" : UNKNOWN), id }]);
+      }}>+ {noun} 추가</button>
+      {entries.length >= maximum && <p className="text-sm text-stone-600">{maximum}명까지 입력할 수 있습니다. 추가 인원이 있으면 기타 요청사항에 인원수를 알려주세요.</p>}
+    </div>
+  );
+}
+
+function PreparationChecklist({ survey }: { survey: Survey }) {
+  const named = (person: Person) => person.name && person.name !== UNKNOWN;
+  const officers = survey.officers.filter(named);
+  const shareholders = survey.shareholders.filter(named);
+  const minors = survey.shareholders.filter(person => person.minor);
+  const holder = survey.company.bankCertificateHolder;
+  const officerDocuments = "개인인감도장, 개인인감증명서 1부(인터넷 발급 제외), 주민등록초본 1부(주민등록번호 뒷자리 공개)";
+  const minorDocuments = "미성년자 본인 기준 기본증명서(상세), 가족관계증명서(상세) 및 법정대리인의 도장";
+
+  return (
+    <section className="mt-6 space-y-3 rounded-xl bg-stone-50 p-4 text-sm leading-7 text-stone-700 sm:p-5">
+      <h3 className="text-lg font-bold text-stone-950">최종 필요서류</h3>
+      <p>아래 서류와 도장을 준비해 주세요. 주민등록초본은 사무소 안내에 따라 별도로 제출해 주세요.</p>
+      <ul className="list-disc space-y-2 pl-5 [overflow-wrap:anywhere]">
+        {officers.length ? officers.map((person, index) => (
+          <li key={index}><strong>{person.name} (임원)</strong> · {officerDocuments}</li>
+        )) : <li><strong>임원 각 1인</strong> · {officerDocuments}</li>}
+        {shareholders.length ? shareholders.map((person, index) => (
+          <li key={index}><strong>{person.name} (주주·사원)</strong> · 도장</li>
+        )) : <li><strong>주주·사원 각 1인</strong> · 도장</li>}
+        <li><strong>주주 중 1인의 잔고증명서</strong> · {holder ? `발급인 ${holder}` : `${defaultBankCertificateHolder} 명의로 지정 예정`}</li>
+        {minors.map((person, index) => {
+          const guardians = [person.fatherName, person.motherName].filter(name => name && name !== UNKNOWN);
+          return (
+            <li key={index}>
+              <strong>{named(person) ? `${person.name} (미성년 주주)` : "미성년 주주"}</strong> · {minorDocuments}
+              {guardians.length > 0 && ` (${guardians.join(", ")})`}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+export default function IncorporationForm() {
+  const [survey, setSurvey] = useState(initialSurvey);
+  const [officers, setOfficers] = useState<PersonRow[]>(() => [{ ...emptyPerson(), id: 0 }]);
+  const [shareholders, setShareholders] = useState<PersonRow[]>(() => [{ ...emptyPerson("주주"), id: 0 }]);
+  const [review, setReview] = useState<Survey | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [receipt, setReceipt] = useState("");
+  const [error, setError] = useState("");
+  const [website, setWebsite] = useState("");
+  const requestId = useRef<string | null>(null);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
+  const reviewButton = useRef<HTMLButtonElement>(null);
+  const receiptHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (review) reviewHeading.current?.focus(); }, [review]);
+  useEffect(() => { if (receipt) receiptHeading.current?.focus(); }, [receipt]);
+
+  function update<Key extends keyof Survey>(key: Key, value: Survey[Key]) {
+    setSurvey(current => ({ ...current, [key]: value }));
+    setError("");
+  }
+
+  function updateCompany(key: keyof Survey["company"], value: string) {
+    setSurvey(current => ({
+      ...current,
+      company: { ...current.company, [key]: value },
+    }));
+    setError("");
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || receipt) return;
+    setError("");
+    if (!review) {
+      try {
+        const validated = validateSurvey({ ...survey, officers, shareholders });
+        requestId.current = crypto.randomUUID();
+        setReview(validated);
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : "입력 내용을 확인해 주세요.");
+      }
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/incorporation", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ survey: review, website, requestId: requestId.current }), signal: AbortSignal.timeout(30000),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.receipt) {
+        setError(result.message || "접수하지 못했습니다. 다시 시도해 주세요.");
+        return;
+      }
+      setReceipt(result.receipt);
+    } catch {
+      setError("접수 결과를 확인하지 못했습니다. 입력 내용은 유지됩니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (receipt) {
+    return (
+      <section className="rounded-2xl border border-emerald-200 bg-white p-7">
+        <h2 ref={receiptHeading} tabIndex={-1} className="scroll-mt-44 text-2xl font-bold">기초조사서가 접수되었습니다</h2>
+        <p className="mt-3">접수번호 <strong>{receipt}</strong></p>
+        <p className="mt-2 text-stone-600">사무소에서 내용을 확인한 뒤 담당자에게 연락드립니다.</p>
+        {review && <PreparationChecklist survey={review} />}
+        <a href="/" className={buttonClass + " mt-5"}>홈으로 돌아가기</a>
       </section>
-    )}
-    {mode === "structured" && (
-    <section className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-8"><h2 className="font-bold">개인정보 수집 및 이용 안내</h2><p className="mt-3 text-sm leading-7 text-stone-600">수집·이용 목적: 법인설립 상담, 설립서류 작성 준비 및 연락. 항목: 담당자 성함·이메일·연락처, 입력한 회사정보와 임원·주주의 성명·생년월일·주소·지분율, 전자증명서 희망사항. 입력 내용은 사무소 이메일(soop@sooplaw.com)로 전달되며 상담·업무 목적 달성 시까지 보유합니다. 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으나 온라인 접수가 제한됩니다. 임원·주주 등 다른 분의 정보는 제공 권한을 확인한 뒤 입력해주세요. 문의: 02-6956-8683.</p><div className="mt-5 grid gap-4 text-sm text-stone-700"><label className="flex items-start gap-3"><input type="checkbox" className="mt-1" checked={survey.agree} onChange={e => update("agree", e.target.checked)} required />개인정보 수집 및 이용에 동의합니다. (필수)</label><label className="flex items-start gap-3"><input type="checkbox" className="mt-1" checked={survey.authority} onChange={e => update("authority", e.target.checked)} required />임원·주주 등 기재된 분들의 정보를 제공할 권한과 동의를 확인했습니다. (필수)</label></div></section>
-    )}
-    </fieldset>
-    <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden"><label>Website<input name="website" value={website} onChange={e => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" /></label></div>
-    {preview && <p className="text-sm leading-6 text-stone-500">안전한 접수를 위해 자동입력 방지 확인이 적용됩니다.</p>}
-    <div role="alert" aria-live="polite" className={message ? "rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900" : ""}>{message}</div>
-    <button type="submit" disabled={busy} className="w-full rounded-full bg-emerald-900 px-6 py-4 font-semibold text-white hover:bg-emerald-950 disabled:cursor-not-allowed disabled:bg-stone-300">{busy ? "접수 중…" : preview ? "확인한 내용으로 사무소에 전송" : "작성 내용 확인하기"}</button>
-    <details className="rounded-2xl border border-stone-200 bg-white p-5 text-sm leading-7 text-stone-600"><summary className="cursor-pointer font-semibold text-stone-800">서류 준비 안내</summary><p className="mt-3">원본 양식의 준비서류: 임원의 개인인감도장·인감증명서·주민등록초본 또는 등본, 주주의 도장, 발기인대표 명의 통장잔고증명서. 미성년 주주가 있으면 가족관계·기본증명서와 법정대리인 관련 자료가 추가될 수 있습니다. 구체적인 발급 방식과 필요한 부수는 사무소 안내를 받은 후 준비해주세요. 이 화면에는 증명서나 주민등록번호 전체를 업로드하지 않습니다.</p></details>
-  </form>;
+    );
+  }
+
+  const companyName = formatCompanyName(survey.company.companyName, survey.companyType, survey.companyTypePosition);
+  const alternateName = formatCompanyName(survey.company.alternateName, survey.companyType, survey.companyTypePosition);
+  const shareFieldsApply = survey.companyType === UNKNOWN || survey.companyType === "주식회사";
+
+  return (
+    <form onSubmit={submit} autoComplete="off" className="space-y-5">
+      <div hidden={!!review} className="space-y-5">
+        <nav aria-label="조사서 항목 이동" className="flex flex-wrap gap-2">
+          {sections.map(([id, label]) => <a key={id} href={"#" + id} className={buttonClass}>{label}</a>)}
+        </nav>
+        <p className="rounded-xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+          담당자 연락처는 필수입니다. 정해지지 않은 항목은 비워두거나 목록에서 ‘미정’을 선택하세요. 주민등록번호, 생년월일, 개인 주소, 계좌번호와 비밀번호는 입력하지 마세요.
+        </p>
+        <Section id="contact-details" title="담당자 연락처">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field required label="성함" value={survey.contactName} onChange={value => update("contactName", value)} maxLength={60} />
+            <Field required label="이메일" type="email" value={survey.email} onChange={value => update("email", value)} maxLength={254} />
+            <Field required label="전화번호" type="tel" value={survey.phone} onChange={value => update("phone", value)} maxLength={30} />
+          </div>
+        </Section>
+        <Section id="company-details" title="회사 정보">
+          <Caution>동일한 관할 내 같은 상호가 있는 경우 상호를 변경해야 할 가능성도 있습니다.</Caution>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="회사 종류" value={survey.companyType} onChange={value => update("companyType", value)} options={companyTypes} />
+            <Select label="회사 종류 표기 위치" value={survey.companyTypePosition} onChange={value => update("companyTypePosition", value)}
+              options={companyTypePositions} />
+            {companyFields.slice(0, 4).map(([key, label, placeholder]) => <Field key={key} label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => updateCompany(key, value)} />)}
+          </div>
+          <div className="space-y-1 rounded-xl bg-stone-50 p-4 text-sm text-stone-700 [overflow-wrap:anywhere]">
+            <p>국문상호에는 회사 종류를 뺀 이름만 입력하세요. 예를 들어 ‘새봄’을 입력하면 ‘주식회사 새봄’ 또는 ‘새봄 주식회사’로 표시됩니다.</p>
+            <p>국문상호 1순위 <strong>{companyName}</strong></p>
+            {alternateName !== UNKNOWN && <p>국문상호 2순위 <strong>{alternateName}</strong></p>}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {companyFields.slice(4).filter(([key]) => shareFieldsApply || (key !== "sharePrice" && key !== "authorizedShares")).map(([key, label, placeholder]) => (
+              <div key={key} className="space-y-2">
+                <Field label={label} value={survey.company[key]} placeholder={placeholder} onChange={value => updateCompany(key, value)}
+                  maxLength={key === "bankCertificateHolder" ? 60 : 300} />
+                {key === "announcement" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, "아시아경제신문")}>아시아경제신문 선택</button>}
+                {key === "authorizedShares" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, "1000000")}>1,000,000주 선택</button>}
+                {key === "bank" && <button type="button" className={buttonClass} onClick={() => updateCompany(key, UNKNOWN)}>미정</button>}
+                {key === "bankCertificateHolder" && <p className="text-sm leading-6 text-stone-600">비워두면 {defaultBankCertificateHolder} 명의로 지정됩니다.</p>}
+              </div>
+            ))}
+          </div>
+        </Section>
+        <Section id="business-purposes" title="사업목적">
+          <Caution>사업목적 중에는 최소 자본금 제한 등 인허가 요건이 필요한 경우가 있습니다.</Caution>
+          <PurposePicker selected={survey.industryCodes} onChange={value => update("industryCodes", value)} />
+          <label className="grid gap-2 text-sm font-semibold text-stone-700">
+            직접 작성할 목적 (선택)
+            <textarea className={inputClass} rows={3} maxLength={4000} value={survey.purposes} onChange={event => update("purposes", event.target.value)}
+              placeholder="목록에 없는 사업 또는 구체적인 사업 내용을 한 줄씩 적어주세요." />
+          </label>
+          <p className="text-sm leading-6 text-stone-600">선택하거나 직접 적은 항목은 사무소에서 등기 문구로 검토합니다.</p>
+        </Section>
+        <Section id="officers" title="임원">
+          {shareFieldsApply && <Caution>주식회사 발기설립 안내 · 주주가 아닌 임원이 1인 이상 필요합니다.</Caution>}
+          <People entries={officers} onChange={setOfficers} />
+        </Section>
+        <Section id="shareholders" title="주주·사원">
+          <p className="text-sm text-stone-600">지분율을 모두 확정했다면 합계가 100%가 되도록 적어주세요.</p>
+          <People entries={shareholders} shareholder onChange={setShareholders} />
+        </Section>
+        <Section id="certificate" title="전자증명서 발급 희망사항">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="전자증명서" value={survey.certificate} onChange={value => update("certificate", value)} options={choices} />
+            <Select label="기기형 OTP" value={survey.otp} onChange={value => update("otp", value)} options={choices} />
+            <Field label="대표자 이메일 (선택)" type="email" value={survey.representativeEmail} onChange={value => update("representativeEmail", value)} maxLength={254} />
+          </div>
+        </Section>
+        <Section id="notes" title="기타 요청사항">
+          <label className="grid gap-2 text-sm font-semibold text-stone-700">
+            사무소에 전달할 내용 (선택)
+            <textarea className={inputClass} rows={4} maxLength={3000} value={survey.notes} onChange={event => update("notes", event.target.value)}
+              placeholder="예: 희망 설립 일정, 사무소에 확인하고 싶은 점" />
+          </label>
+        </Section>
+        <Section id="consent" title="개인정보 수집 및 이용">
+          <p className="text-sm leading-6 text-stone-700">담당자 연락처와 입력하신 회사·사업목적, 잔고증명서 발급인 성명, 임원·주주 정보, 미성년 여부와 법정대리인 성명, 전자증명서 관련 정보를 법인설립 상담과 서류 준비를 위해 사무소 이메일로 전달합니다. 상담·업무 목적이 달성될 때까지 보유하며, 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으며, 거부 시 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a></p>
+          <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.agree} onChange={event => update("agree", event.target.checked)} required />개인정보 수집 및 이용에 동의합니다. (필수)</label>
+          <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.authority} onChange={event => update("authority", event.target.checked)} required />다른 사람의 정보를 입력한 경우 제공 권한과 동의를 확인했습니다. (필수)</label>
+        </Section>
+      </div>
+      {review && (
+        <section className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
+          <h2 ref={reviewHeading} tabIndex={-1} className="scroll-mt-44 text-xl font-bold">전송 전 내용 확인</h2>
+          <pre className="my-5 whitespace-pre-wrap [overflow-wrap:anywhere] font-sans text-sm leading-6 text-stone-700">{surveyText(review)}</pre>
+          <button type="button" disabled={busy} className={buttonClass} onClick={() => {
+            setReview(null);
+            setError("");
+            requestAnimationFrame(() => reviewButton.current?.focus());
+          }}>입력 내용 수정</button>
+        </section>
+      )}
+      <div aria-hidden="true" className="absolute left-[-10000px] size-px overflow-hidden">
+        <label>Website<input name="website" tabIndex={-1} value={website} onChange={event => setWebsite(event.target.value)} autoComplete="off" /></label>
+      </div>
+      {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-900">{error}</p>}
+      <button ref={reviewButton} type="submit" disabled={busy} className="min-h-12 w-full rounded-full bg-emerald-900 px-5 py-3 font-semibold text-white hover:bg-emerald-950 disabled:opacity-60">
+        {busy ? "접수 중…" : review ? "사무소에 전송" : "작성 내용 확인"}
+      </button>
+    </form>
+  );
 }

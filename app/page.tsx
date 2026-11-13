@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { ConsultationForm } from "../components/consultation-form";
 import {
   Building2,
   FileText,
@@ -30,7 +29,7 @@ const services = [
   {
     icon: MapPin,
     title: "부동산·상속등기",
-    href: "#consultation",
+    href: "/consultation",
     desc: "소유권이전, 상속등기, 담보권 설정·말소 등 상담",
   },
   {
@@ -102,17 +101,28 @@ export default function SoopLawOfficeHomepage() {
                 {office.name}는 법인등기, 부동산등기, 상속절차, 민사 신청서류 작성까지
                 의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
               </p>
-              <div className="mt-9 flex flex-col flex-wrap gap-3 sm:flex-row">
+              <div id="consultation" className="mt-9 flex scroll-mt-36 flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  href="/incorporation"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-900 px-7 text-base font-bold text-white transition hover:bg-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-900"
+                >
+                  법인 설립 의뢰하기 <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/consultation"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-50 px-7 text-base font-bold text-emerald-950 ring-1 ring-inset ring-emerald-800/30 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-900"
+                >
+                  문의메일 보내기
+                </Link>
                 <a
                   href="tel:02-6956-8683"
-                  className="inline-flex h-12 items-center justify-center rounded-full bg-emerald-900 px-7 text-base font-semibold text-white transition hover:bg-emerald-950"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-emerald-900 px-7 text-base font-semibold text-emerald-900 transition hover:bg-emerald-50"
                 >
-                  전화 상담하기 <ArrowRight className="ml-2 h-4 w-4" />
+                  전화 상담하기
                 </a>
                 <a href="#services" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-base font-semibold hover:bg-stone-100">
                   업무분야 보기
                 </a>
-                <Link href="/incorporation" className="inline-flex min-h-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-6 py-3 font-semibold text-emerald-900 hover:bg-emerald-100">법인설립 조사서 작성</Link>
               </div>
             </div>
 
@@ -316,19 +326,6 @@ export default function SoopLawOfficeHomepage() {
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section id="consultation" className="bg-stone-50 py-20">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="max-w-2xl">
-              <p className="font-semibold text-emerald-900">Consultation</p>
-              <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">상담 신청</h2>
-              <p className="mt-4 leading-7 text-stone-600">
-                아래 내용을 작성하면 입력하신 내용이 이메일 형식으로 정리되어 사무소 메일로 발송됩니다.
-              </p>
-            </div>
-            <ConsultationForm />
           </div>
         </section>
 

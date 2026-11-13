@@ -17,7 +17,10 @@ export function limit(key: string, maximum: number, seconds = 600) {
 }
 export const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 export async function readForm(request: Request, maximum = 49152): Promise<Record<string, unknown>> {
-  if (request.headers.get("origin") !== new URL(request.url).origin) throw new FormError("요청 출처를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.", 403);
+  const url = new URL(request.url);
+  const host = request.headers.get("host") || url.host;
+  const protocol = request.headers.get("x-forwarded-proto") || url.protocol.slice(0, -1);
+  if (request.headers.get("origin") !== `${protocol}://${host}`) throw new FormError("요청 출처를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.", 403);
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) throw new FormError("지원하지 않는 요청 형식입니다.", 415);
   if (Number(request.headers.get("content-length")) > maximum) throw new FormError("입력 내용이 너무 깁니다.", 413);
   // Verify before allocating request counters or consuming an untrusted request stream.

@@ -274,7 +274,7 @@ export default async function PostDetailPage(
         </div>
         <div className="mt-10 flex flex-wrap gap-4">
           <Link href="/board" className="rounded-full border border-stone-300 px-6 py-3 text-sm font-semibold">자료실 목록</Link>
-          <Link href="/#consultation" className="rounded-full bg-emerald-900 px-6 py-3 text-sm font-semibold text-white">이 업무 상담하기</Link>
+          <Link href="/consultation" className="rounded-full bg-emerald-900 px-6 py-3 text-sm font-semibold text-white">이 업무 상담하기</Link>
         </div>
       </article>
     </main>

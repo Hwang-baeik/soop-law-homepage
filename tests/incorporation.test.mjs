@@ -6,14 +6,14 @@ const { POST } = await loadRoute('../app/api/incorporation/route.ts');
 const sample = () => ({ ...initialSurvey(), contactName: '테스트 담당자', email: 'test@example.com', phone: '010-1234-5678', agree: true, authority: true });
 test('blank establishment fields are sent as undecided, not unchosen defaults', () => {
   const s = validateSurvey(sample());
-  assert.equal(s.company.announcement, '미정'); assert.equal(s.company.authorizedShares, '미정');
-  assert.ok(surveyText(s).includes('상호 1순위: 미정'));
-  assert.ok(surveyText(s).includes('주민등록번호 전체 및 비밀번호: 별도 확인'));
+  assert.match(surveyText(s), /공고방법: 미정/);
+  assert.match(surveyText(s), /발행할 주식의 총수 \(주\): 미정/);
+  assert.match(surveyText(s), /국문상호 \(1순위\): 미정/);
 });
 for (const [label, change] of [
   ['contact', { contactName: '' }], ['email', { email: 'bad' }], ['phone', { phone: 'bad' }], ['consent', { agree: false }], ['authority', { authority: false }],
   ['negative capital', { company: { ...sample().company, capital: '-1' } }],
-  ['invalid birthday', { officers: [{ ...sample().officers[0], birthDate: '2025-02-30' }] }],
+  ['invalid industry code', { industryCodes: ['47913'] }],
   ['resident number', { notes: '990101-1234567' }],
   ['too many officers', { officers: Array(11).fill(sample().officers[0]) }],
   ['incomplete shares', { shareholders: [{ ...sample().shareholders[0], share: '40' }] }],
@@ -38,13 +38,24 @@ test('rejects BotID bots before mail sending', async () => {
 });
 test('sends organized plain text to fixed office recipient; identical content deduplicates across request IDs', async () => {
   state.accepted.clear();
-  const s = { ...sample(), notes: '<script>example</script>' };
+  const initial = sample();
+  const s = {
+    ...initial, notes: '<script>example</script>',
+    company: { ...initial.company, companyName: '새봄', bank: '미정' },
+    companyType: '주식회사', companyTypePosition: '상호 뒤', industryCodes: ['479', '4791', '47912'],
+    officers: [{ ...initial.officers[0], birthDate: '2001-02-03' }],
+    shareholders: [{ ...initial.shareholders[0], minor: true, fatherName: '테스트 부', motherName: '테스트 모' }],
+  };
   const first = await POST(request({ survey: s })); assert.equal(first.status, 200);
   const result = await first.json(); assert.match(result.receipt, /^SOOP-[A-F0-9]{12}$/);
   await Promise.all([POST(request({ survey: s })), POST(request({ survey: s }))]);
   assert.equal(state.accepted.size, 1);
   const body = [...state.accepted.values()][0]; assert.deepEqual(body.to, ['soop@sooplaw.com']); assert.equal(body.reply_to, s.email);
-  assert.ok(body.text.includes(result.receipt)); assert.ok(body.text.includes('상호 1순위: 미정')); assert.ok(!Object.hasOwn(body, 'html'));
+  assert.ok(body.text.includes(result.receipt)); assert.ok(!Object.hasOwn(body, 'html'));
+  assert.match(body.text, /국문상호 \(1순위\): 새봄 주식회사/);
+  assert.match(body.text, /\[479\] 무점포 소매업\n\[4791\] 통신 판매업\n\[47912\] 전자상거래 소매업/);
+  assert.match(body.text, /법정대리인 부: 테스트 부\n   법정대리인 모: 테스트 모/);
+  assert.doesNotMatch(body.text, /2001-02-03/);
 });
 test('provider failure never reports success and retry retains idempotency key', async () => {
   const body = { survey: { ...sample(), notes: 'retry test' } };
