@@ -29,6 +29,24 @@ export type Survey = {
   certificate: string; otp: string; representativeEmail: string;
   notes: string; agree: boolean; authority: boolean;
 };
+export type SurveyDetails = Omit<Survey, "agree" | "authority">;
+export type SurveySectionId = "contact-details" | "company-details" | "business-purposes" |
+  "officers" | "shareholders" | "certificate" | "notes";
+
+export class SurveySectionError extends Error {
+  constructor(readonly section: SurveySectionId, message: string) {
+    super(message);
+  }
+}
+
+function inSection<T>(section: SurveySectionId, validate: () => T): T {
+  try {
+    return validate();
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    throw new SurveySectionError(section, error.message);
+  }
+}
 
 export const emptyPerson = (role: string = UNKNOWN): Person => ({ role, name: "", share: "" });
 
@@ -96,7 +114,7 @@ function people(value: unknown, shareholder: boolean) {
   });
 }
 
-function validateContact(body: Record<string, unknown>) {
+export function validateContact(body: Record<string, unknown>) {
   const contactName = text(body.contactName, 60);
   const email = text(body.email, 254);
   const phone = text(body.phone, 30);
@@ -111,46 +129,65 @@ export function validateSurvey(input: unknown): Survey {
   if (body.agree !== true || body.authority !== true) {
     throw new Error("개인정보 동의와 정보 제공 권한 확인이 필요합니다.");
   }
-  const contact = validateContact(body);
+  return { ...validateSurveyDetails(body), agree: true, authority: true };
+}
 
-  const rawCompany = record(body.company);
-  const company = Object.fromEntries(companyFields.map(([key]) => [
-    key, key === "bankCertificateHolder" ? text(rawCompany[key] ?? "", 60) : text(rawCompany[key] ?? "", 300),
-  ])) as Survey["company"];
-  const companyType = choice(body.companyType ?? UNKNOWN, companyTypes);
-  if (companyType !== UNKNOWN && companyType !== "주식회사") {
-    company.sharePrice = "";
-    company.authorizedShares = "";
-  }
-  for (const key of ["sharePrice", "authorizedShares", "capital"] as const) {
-    if (company[key] && company[key] !== UNKNOWN && !/^[1-9]\d{0,14}$/.test(company[key])) {
-      throw new Error("금액과 주식 수는 0보다 큰 정수 또는 미정으로 입력해 주세요.");
+export function validateSurveyDetails(input: unknown): SurveyDetails {
+  const body = record(input);
+  const contact = inSection("contact-details", () => validateContact(body));
+
+  const companyDetails = inSection("company-details", () => {
+    const rawCompany = record(body.company);
+    const company = Object.fromEntries(companyFields.map(([key]) => [
+      key, text(rawCompany[key] ?? "", key === "bankCertificateHolder" ? 60 : 300),
+    ])) as Survey["company"];
+    const companyType = choice(body.companyType ?? UNKNOWN, companyTypes);
+    if (companyType !== UNKNOWN && companyType !== "주식회사") {
+      company.sharePrice = "";
+      company.authorizedShares = "";
     }
-  }
-  const companyTypePosition = choice(body.companyTypePosition ?? companyTypePositions[0], companyTypePositions);
+    for (const key of ["sharePrice", "authorizedShares", "capital"] as const) {
+      if (company[key] && company[key] !== UNKNOWN && !/^[1-9]\d{0,14}$/.test(company[key])) {
+        throw new Error("금액과 주식 수는 0보다 큰 정수 또는 미정으로 입력해 주세요.");
+      }
+    }
+    const companyTypePosition = choice(body.companyTypePosition ?? companyTypePositions[0], companyTypePositions);
+    return { company, companyType, companyTypePosition };
+  });
 
-  const codes = body.industryCodes ?? [];
-  if (!Array.isArray(codes) || codes.length > maximumIndustrySelections
-      || codes.some(code => typeof code !== "string" || !industryNames.has(code))) {
-    throw new Error(`사업목적은 목록에서 ${maximumIndustrySelections}개까지 선택할 수 있습니다.`);
-  }
-  const industryCodes = [...new Set<string>(codes)];
-  const officers = people(body.officers, false);
-  const shareholders = people(body.shareholders, true);
-  const known = shareholders.filter(person => person.share && person.share !== UNKNOWN);
-  const total = known.reduce((sum, person) => sum + Math.round(Number(person.share) * 10000), 0);
-  if (total > 1000000 || (known.length === shareholders.length && total !== 1000000)) {
-    throw new Error("확정된 지분율 합계는 100%여야 합니다. 일부 지분이 미정이면 현재 합계가 100%를 넘지 않도록 입력해 주세요.");
-  }
-  const representativeEmail = text(body.representativeEmail, 254);
-  if (representativeEmail && representativeEmail !== UNKNOWN && !validEmail(representativeEmail)) {
-    throw new Error("대표자 이메일을 확인해 주세요.");
-  }
+  const industryCodes = inSection("business-purposes", () => {
+    const codes = body.industryCodes ?? [];
+    if (!Array.isArray(codes) || codes.length > maximumIndustrySelections
+        || codes.some(code => typeof code !== "string" || !industryNames.has(code))) {
+      throw new Error(`사업목적은 목록에서 ${maximumIndustrySelections}개까지 선택할 수 있습니다.`);
+    }
+    return [...new Set<string>(codes)];
+  });
+  const officers = inSection("officers", () => people(body.officers, false));
+  const shareholders = inSection("shareholders", () => {
+    const entries = people(body.shareholders, true);
+    const known = entries.filter(person => person.share && person.share !== UNKNOWN);
+    const total = known.reduce((sum, person) => sum + Math.round(Number(person.share) * 10000), 0);
+    if (total > 1000000 || (known.length === entries.length && total !== 1000000)) {
+      throw new Error("확정된 지분율 합계는 100%여야 합니다. 일부 지분이 미정이면 현재 합계가 100%를 넘지 않도록 입력해 주세요.");
+    }
+    return entries;
+  });
+  const representativeEmail = inSection("certificate", () => {
+    const representativeEmail = text(body.representativeEmail, 254);
+    if (representativeEmail && representativeEmail !== UNKNOWN && !validEmail(representativeEmail)) {
+      throw new Error("대표자 이메일을 확인해 주세요.");
+    }
+    return representativeEmail;
+  });
   return {
-    ...contact, company, companyType, companyTypePosition, industryCodes,
-    purposes: text(body.purposes, 6000, true), officers, shareholders,
-    certificate: choice(body.certificate, choices), otp: choice(body.otp, choices),
-    representativeEmail, notes: text(body.notes, 3000, true), agree: true, authority: true,
+    ...contact, ...companyDetails, industryCodes,
+    purposes: inSection("business-purposes", () => text(body.purposes, 6000, true)),
+    officers, shareholders,
+    certificate: inSection("certificate", () => choice(body.certificate, choices)),
+    otp: inSection("certificate", () => choice(body.otp, choices)),
+    representativeEmail,
+    notes: inSection("notes", () => text(body.notes, 3000, true)),
   };
 }
 
@@ -184,7 +221,7 @@ export function formatCompanyName(name: string, companyType: string, position: s
   return position === companyTypePositions[1] ? `${base} ${companyType}` : `${companyType} ${base}`;
 }
 
-export function surveyText(survey: Survey) {
+export function surveyReviewSections(survey: SurveyDetails): { id: SurveySectionId; title: string; text: string }[] {
   const display = (value: string) => value || UNKNOWN;
   const purposeLines = survey.industryCodes.map(code => `[${code}] ${industryNames.get(code)}`);
   if (survey.purposes && survey.purposes !== UNKNOWN) purposeLines.push(survey.purposes);
@@ -197,10 +234,8 @@ export function surveyText(survey: Survey) {
     return `${index + 1}. ${name} · ${detail}${guardians}`;
   });
   return [
-    "법인설립 기초조사서",
-    `【담당자】\n성함: ${survey.contactName}\n이메일: ${survey.email}\n연락처: ${survey.phone}`,
-    [
-      "【회사 기본정보】",
+    { id: "contact-details", title: "담당자", text: `성함: ${survey.contactName}\n이메일: ${survey.email}\n연락처: ${survey.phone}` },
+    { id: "company-details", title: "회사 기본정보", text: [
       `회사 종류: ${survey.companyType}`,
       ...companyFields
         .filter(([key]) => survey.companyType === UNKNOWN || survey.companyType === "주식회사" || (key !== "sharePrice" && key !== "authorizedShares"))
@@ -212,12 +247,19 @@ export function surveyText(survey: Survey) {
               : display(survey.company[key]);
           return `${label}: ${value}`;
         }),
-    ].join("\n"),
-    ["【사업목적】", ...(purposeLines.length ? [...purposeLines, "위 각호에 부대하는 사업 일체"] : [UNKNOWN])].join("\n"),
-    ["【임원】", ...peopleLines(survey.officers, false)].join("\n"),
-    ["【주주·사원】", ...peopleLines(survey.shareholders, true)].join("\n"),
-    `【전자증명서】\n발급 희망: ${survey.certificate}\n대표자 이메일: ${display(survey.representativeEmail)}\n기기형 OTP: ${survey.otp}`,
-    `【기타 요청사항】\n${display(survey.notes)}`,
+    ].join("\n") },
+    { id: "business-purposes", title: "사업목적", text: purposeLines.length ? [...purposeLines, "위 각호에 부대하는 사업 일체"].join("\n") : UNKNOWN },
+    { id: "officers", title: "임원", text: peopleLines(survey.officers, false).join("\n") },
+    { id: "shareholders", title: "주주·사원", text: peopleLines(survey.shareholders, true).join("\n") },
+    { id: "certificate", title: "전자증명서", text: `발급 희망: ${survey.certificate}\n대표자 이메일: ${display(survey.representativeEmail)}\n기기형 OTP: ${survey.otp}` },
+    { id: "notes", title: "기타 요청사항", text: display(survey.notes) },
+  ];
+}
+
+export function surveyText(survey: SurveyDetails) {
+  return [
+    "법인설립 기초조사서",
+    ...surveyReviewSections(survey).map(section => `【${section.title}】\n${section.text}`),
     "개인정보 수집·이용 및 제3자 정보 제공 권한 확인: 동의함\n동의 안내 버전: incorporation-v3",
   ].join("\n\n");
 }
