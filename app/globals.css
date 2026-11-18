@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-soop-paper: #faf8f1;
+  --color-soop-forest: #153b2d;
+  --color-soop-muted: #49564e;
+  --color-soop-rule: #d7d9cc;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
