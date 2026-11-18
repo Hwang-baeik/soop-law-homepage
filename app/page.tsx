@@ -7,11 +7,12 @@ import {
   Phone,
   CheckCircle2,
   ArrowRight,
-  ShieldCheck,
+  ArrowUpRight,
   ClipboardCheck,
   Users,
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
+import { ManagedCompanyCount } from "../components/managed-company-count";
 import Link from "next/link";
 
 
@@ -52,13 +53,6 @@ const services = [
   },
 ];
 
-const strengths = [
-  "절차별 체크리스트 기반 검토",
-  "법인·부동산 등기 실무 중심 대응",
-  "성동구·성수동 지역 접근성",
-  "필요서류, 세금, 일정까지 한 번에 정리",
-];
-
 const process = [
   "상담 및 사실관계 확인",
   "필요서류·비용·일정 안내",
@@ -82,71 +76,45 @@ export default function SoopLawOfficeHomepage() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
       <main id="main-content">
-        <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-50 via-white to-emerald-50">
-          <div className="pointer-events-none absolute right-[-8rem] top-[-8rem] hidden h-80 w-80 rounded-full bg-emerald-100/60 blur-3xl md:block" />
-          <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 py-14 md:grid-cols-[1.05fr_0.95fr] md:py-32">
+        <section aria-labelledby="home-title" className="border-b border-soop-rule bg-soop-paper">
+          <div className="mx-auto grid max-w-[88rem] items-center gap-6 px-5 pt-9 pb-6 sm:px-8 lg:min-h-[calc(100svh-5.125rem)] lg:grid-cols-[1.16fr_1fr] lg:gap-[clamp(2.5rem,5.6vw,5.5rem)] lg:px-16 lg:py-[clamp(2.5rem,5vw,4.75rem)]">
             <div>
-              <div className="mb-8 inline-flex rounded-[1.75rem] border border-emerald-100 bg-white px-5 py-4 shadow-sm md:px-6 md:py-5">
-                <LogoMark />
-              </div>
-              <div className="mb-5 inline-flex rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-900 shadow-sm">
-                성동구·성수동 법인등기 및 부동산등기 실무 사무소
-              </div>
-              <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-                복잡한 등기 절차를
+              <p className="mb-3.5 text-xs font-semibold text-soop-forest lg:mb-5 lg:text-sm">서울 성수동 법무사 사무소</p>
+              <h1 id="home-title" className="text-[clamp(1.45rem,8.4vw,3rem)] leading-[1.23] font-medium tracking-[-0.062em] break-keep text-soop-forest lg:text-[clamp(2.25rem,4.28vw,4.25rem)]">
+                법인·부동산 등기,
                 <br />
-                정확하고 차분하게 정리합니다.
+                <strong className="font-extrabold">서류 준비부터 접수까지</strong>
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-600">
-                {office.name}는 법인등기, 부동산등기, 상속절차, 민사 신청서류 작성까지
-                의뢰인의 상황에 맞추어 필요한 절차와 위험요소를 사전에 점검합니다.
+              <p className="mt-4 max-w-lg text-sm leading-[1.8] break-keep text-soop-muted lg:mt-6 lg:text-lg">
+                법인설립, 임원변경, 부동산·상속등기.
+                <br className="hidden lg:block" />{" "}필요한 서류와 절차를 사안에 맞춰 안내합니다.
               </p>
-              <div id="consultation" className="mt-9 flex scroll-mt-36 flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div id="consultation" className="mt-5 flex max-w-sm scroll-mt-24 gap-2 sm:max-w-none lg:mt-8 lg:gap-2.5">
                 <Link
                   href="/incorporation"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-900 px-7 text-base font-bold text-white transition hover:bg-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-900"
+                  className="inline-flex min-h-12 flex-[1.25] items-center justify-center gap-2 rounded bg-soop-forest px-3 text-sm font-bold whitespace-nowrap text-white transition-colors hover:bg-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-soop-forest sm:flex-none sm:px-5 lg:min-h-[3.25rem] lg:gap-4"
                 >
-                  법인 설립 의뢰하기 <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
+                  법인설립 의뢰 <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
                 </Link>
                 <Link
                   href="/consultation"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full bg-emerald-50 px-7 text-base font-bold text-emerald-950 ring-1 ring-inset ring-emerald-800/30 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-900"
+                  className="inline-flex min-h-12 flex-1 items-center justify-center rounded border border-soop-muted/45 px-3 text-sm font-bold whitespace-nowrap text-soop-forest transition-colors hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-soop-forest sm:flex-none sm:px-5 lg:min-h-[3.25rem]"
                 >
-                  문의메일 보내기
+                  상담 문의
                 </Link>
-                <a
-                  href="tel:02-6956-8683"
-                  className="inline-flex h-12 items-center justify-center rounded-full border border-emerald-900 px-7 text-base font-semibold text-emerald-900 transition hover:bg-emerald-50"
-                >
-                  전화 상담하기
-                </a>
-                <a href="#services" className="inline-flex h-12 items-center justify-center rounded-full border border-stone-300 px-7 text-base font-semibold hover:bg-stone-100">
-                  업무분야 보기
-                </a>
               </div>
+              <ManagedCompanyCount />
             </div>
 
-            <div>
-              <Card className="rounded-[2rem] border-stone-200 bg-white/90 shadow-xl">
-                <CardContent className="p-8">
-                  <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-900 text-white">
-                    <ShieldCheck className="h-7 w-7" />
-                  </div>
-                  <h2 className="text-2xl font-bold">사건별 핵심 검토</h2>
-                  <p className="mt-3 leading-7 text-stone-600">
-                    단순 접수 대행이 아니라, 결의기관·공고·첨부서면·세무상 검토사항을 함께 확인하여
-                    보정 가능성을 줄이는 방식으로 진행합니다.
-                  </p>
-                  <div className="mt-8 grid gap-4">
-                    {strengths.map((item) => (
-                      <div key={item} className="flex items-start gap-3 rounded-2xl bg-stone-50 p-4">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-800" />
-                        <span className="text-sm font-medium text-stone-700">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="relative h-[clamp(13.75rem,72vw,24rem)] overflow-hidden bg-soop-rule lg:h-[clamp(23rem,41vw,41rem)]">
+              <Image
+                src="/soop-home-architecture.webp"
+                alt=""
+                fill
+                preload
+                sizes="(min-width: 1440px) 550px, (min-width: 1024px) 42vw, calc(100vw - 40px)"
+                className="object-cover object-[center_67%] lg:object-[center_59%]"
+              />
             </div>
           </div>
         </section>
