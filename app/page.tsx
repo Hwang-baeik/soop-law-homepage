@@ -1,12 +1,9 @@
 import Image from "next/image";
 import {
-  Building2,
   FileText,
-  Scale,
   MapPin,
   Phone,
   CheckCircle2,
-  ArrowRight,
   ArrowUpRight,
   ClipboardCheck,
   Users,
@@ -28,37 +25,40 @@ const office = {
 
 const services = [
   {
-    icon: MapPin,
     title: "부동산·상속등기",
     href: "/consultation",
-    desc: "소유권이전, 상속등기, 담보권 설정·말소 등 상담",
+    desc: "소유권이전, 상속등기, 담보권 설정·말소",
+    action: "상담 문의",
   },
   {
-    icon: Building2,
     title: "법인등기",
     href: "/board?category=법인등기%20절차",
-    desc: "설립, 임원변경, 본점이전, 증자·감자, 정관변경 등",
+    desc: "설립, 임원변경, 본점이전, 증자·감자, 정관변경",
+    action: "절차 보기",
   },
   {
-    icon: FileText,
     title: "민사서류",
     href: "/board?category=민사서류%20절차",
-    desc: "내용증명, 지급명령, 소장, 신청서 작성 등",
+    desc: "내용증명, 지급명령, 소장 및 신청서 작성",
+    action: "절차 보기",
   },
   {
-    icon: Scale,
     title: "민사집행",
     href: "/board?category=민사집행%20절차",
-    desc: "압류, 추심, 강제집행 등",
+    desc: "압류, 추심, 강제집행",
+    action: "절차 보기",
   },
 ];
 
 const process = [
-  "상담 및 사실관계 확인",
-  "필요서류·비용·일정 안내",
-  "서류 작성 및 사전 검토",
-  "접수·보정 대응·완료 보고",
+  { title: "상담 및 사실관계 확인", detail: "의뢰하시는 업무와 현재 상황을 확인합니다." },
+  { title: "필요서류·비용·일정 안내", detail: "준비할 서류와 예상 비용, 일정을 안내합니다." },
+  { title: "서류 작성 및 사전 검토", detail: "신청에 필요한 서류를 작성하고 확인합니다." },
+  { title: "접수·보정 대응·완료 보고", detail: "접수 후 보정 요청에 대응하고 결과를 안내합니다." },
 ];
+
+const sectionShell = "mx-auto max-w-[88rem] px-5 sm:px-8 lg:px-16";
+const sectionHeading = "text-[1.8125rem] leading-tight font-extrabold tracking-[-0.05em] break-keep md:text-[clamp(2rem,3.5vw,3.125rem)]";
 
 function LogoMark({ compact = false }: { compact?: boolean }) {
   return (
@@ -148,45 +148,37 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
-        <section id="services" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="font-semibold text-emerald-900">Practice Areas</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">주요 업무분야</h2>
-            <p className="mt-4 leading-7 text-stone-600">
-              법률관계와 등기절차가 맞물리는 업무를 중심으로, 필요한 서류와 결의 절차를 정리합니다.
-            </p>
-          </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {services.map(({ icon: Icon, title, desc, href }) => (
-                <Link
-                  key={title}
-                  href={href}
-                  className="rounded-3xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <div className="p-6">
-                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-900">
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-xl font-bold">{title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-stone-600">{desc}</p>
-                  </div>
-                </Link>
-            ))}
-          </div>
-          <Link
-            href="/board"
-            className="mt-8 flex flex-col gap-5 rounded-2xl border border-emerald-900/15 bg-emerald-950 px-6 py-6 text-white shadow-sm transition hover:bg-emerald-900 md:flex-row md:items-center md:justify-between md:px-8"
-          >
+        <section id="services" aria-labelledby="services-title" className="scroll-mt-16 border-y border-soop-rule bg-soop-paper pt-8 pb-6 text-soop-forest lg:scroll-mt-20 lg:py-16">
+          <div className={`${sectionShell} grid gap-5 lg:grid-cols-[minmax(12.5rem,0.85fr)_minmax(0,2.15fr)] lg:gap-[clamp(1.75rem,5vw,4.5rem)]`}>
             <div>
-              <p className="text-sm font-semibold text-emerald-100">업무 안내 자료</p>
-              <p className="mt-2 max-w-2xl text-lg font-bold leading-7">
-                각 업무의 절차와 준비서류가 궁금하다면 정리된 안내글을 확인해 보세요.
+              <h2 id="services-title" className={sectionHeading}>주요 업무분야</h2>
+              <p className="mt-2.5 text-sm leading-relaxed break-keep text-soop-muted lg:mt-4 lg:text-base">
+                필요한 업무를 선택해 <br className="hidden lg:block" />
+                절차를 확인하거나 상담을 신청하세요.
               </p>
             </div>
-            <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-emerald-950">
-              안내글 보기 <ArrowRight className="ml-2 h-4 w-4" />
-            </span>
-          </Link>
+            <div>
+              <ul role="list" className="border-t border-soop-rule">
+                {services.map(({ title, desc, href, action }) => (
+                  <li key={title} className="border-b border-soop-rule">
+                    <Link href={href}
+                      className="group grid min-h-[4.5rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-0.5 py-3 hover:bg-soop-sage focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-soop-forest md:grid-cols-[minmax(8rem,0.85fr)_minmax(0,1.75fr)_auto] md:gap-4">
+                      <h3 className="col-start-1 row-start-1 self-end font-bold tracking-tight break-keep md:self-center md:text-lg">{title}</h3>
+                      <p className="col-start-1 row-start-2 self-start text-[0.8125rem] leading-relaxed break-keep text-soop-muted md:col-start-2 md:row-start-1 md:self-center md:text-sm">{desc}</p>
+                      <span className="col-start-2 row-span-2 row-start-1 flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap group-hover:underline group-hover:underline-offset-4 md:col-start-3 md:row-span-1 md:gap-2 md:text-sm">
+                        {action}<ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1 flex justify-end lg:mt-2.5">
+                <Link href="/board" className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold hover:underline hover:underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-soop-forest md:gap-2 md:text-sm">
+                  실무자료실 전체 보기 <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="strength" className="bg-white py-20">
@@ -214,20 +206,22 @@ export default function SoopLawOfficeHomepage() {
           </div>
         </section>
 
-        <section id="process" className="mx-auto max-w-7xl px-6 py-20">
-          <div className="mb-10 max-w-2xl">
-            <p className="font-semibold text-emerald-900">Process</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">진행 절차</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-4">
-            {process.map((step, idx) => (
-              <div key={step} className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-900 text-sm font-bold text-white">
-                  {idx + 1}
-                </div>
-                <h3 className="font-bold">{step}</h3>
-              </div>
-            ))}
+        <section id="process" aria-labelledby="process-title" className="scroll-mt-16 border-t border-soop-rule bg-soop-sage py-8 text-soop-forest lg:scroll-mt-20 lg:py-[clamp(2.75rem,4.8vw,4.25rem)]">
+          <div className={sectionShell}>
+            <h2 id="process-title" className={sectionHeading}>진행 절차</h2>
+            <ol role="list" className="mt-5 md:mt-8 md:grid md:grid-cols-4">
+              {process.map(({ title, detail }, index) => (
+                <li key={title} className="relative grid min-h-16 grid-cols-[1.875rem_1fr] content-start gap-x-3 pb-3.5 before:absolute before:top-3.5 before:-bottom-3.5 before:left-3.5 before:w-px before:bg-soop-forest/30 last:min-h-0 last:pb-0 last:before:hidden md:min-h-0 md:grid-cols-1 md:gap-y-3 md:pr-5 md:pb-0 md:before:top-4 md:before:right-0 md:before:bottom-auto md:before:left-4 md:before:h-px md:before:w-auto">
+                  <span aria-hidden="true" className="relative z-10 grid size-[1.8125rem] place-items-center rounded-full border border-soop-forest/50 bg-soop-sage text-xs font-bold md:size-8 md:text-sm">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-[0.9375rem] leading-snug font-bold tracking-tight break-keep lg:text-lg">{title}</h3>
+                    <p className="mt-1 text-[0.8125rem] leading-relaxed break-keep text-soop-muted md:text-sm">{detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
