@@ -3,48 +3,57 @@ import { industryGroups, industryLevels, industryNames, matchesIndustry, maximum
 
 const controlClass = "min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base text-stone-950 focus-visible:outline-2 focus-visible:outline-emerald-800";
 
-export function PurposePicker({ selected, onChange }: { selected: string[]; onChange: (codes: string[]) => void }) {
+export function PurposePicker({ selected, onChange, compact }: { selected: string[]; onChange: (codes: string[]) => void; compact: boolean }) {
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const pageSize = 24;
   const results = industryGroups
     .filter(group => !category || group.code === category)
     .flatMap(group => group.industries.filter(entry => (!level || String(entry.code.length) === level) && matchesIndustry(entry, query)));
   const displayed = results.slice((page - 1) * pageSize, page * pageSize);
   const pageCount = Math.ceil(results.length / pageSize);
+  const showResults = !compact || !!(query.trim() || category || level);
 
   function toggle(code: string) {
     onChange(selected.includes(code) ? selected.filter(value => value !== code) : [...selected, code]);
   }
+  const searchField = (
+    <label className="grid gap-2 text-sm font-semibold text-stone-700 sm:col-span-2 lg:col-span-1">
+      업종 검색
+      <input className={controlClass} type="search" value={query} onChange={event => { setQuery(event.target.value); setPage(1); }}
+        onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
+        maxLength={100} placeholder="예: 전자상거래, 479, 4791, 47912" />
+    </label>
+  );
 
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-stone-700">한국표준산업분류 제11차 소분류·세분류·세세분류에서 여러 항목을 선택할 수 있습니다.</p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr]">
-        <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        {compact && searchField}
+        <button type="button" aria-expanded={filtersOpen} aria-controls="industry-category industry-level"
+          className="min-h-11 justify-self-start text-sm font-semibold text-emerald-900 underline underline-offset-4 sm:hidden"
+          onClick={() => setFiltersOpen(open => !open)}>{filtersOpen ? "검색 필터 닫기" : "검색 범위 좁히기"}</button>
+        <label id="industry-category" className={`gap-2 text-sm font-semibold text-stone-700 ${filtersOpen ? "grid" : "hidden sm:grid"}`}>
           업종 카테고리
           <select className={controlClass} value={category} onChange={event => { setCategory(event.target.value); setPage(1); }}>
             <option value="">모든 카테고리</option>
             {industryGroups.map(group => <option value={group.code} key={group.code}>{group.name}</option>)}
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-stone-700">
+        <label id="industry-level" className={`gap-2 text-sm font-semibold text-stone-700 ${filtersOpen ? "grid" : "hidden sm:grid"}`}>
           분류 단계
           <select className={controlClass} value={level} onChange={event => { setLevel(event.target.value); setPage(1); }}>
             <option value="">모든 분류 단계</option>
             {industryLevels.map(({ digits, name }) => <option value={digits} key={digits}>{name} ({digits}자리)</option>)}
           </select>
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-stone-700 sm:col-span-2 lg:col-span-1">
-          업종 검색
-          <input className={controlClass} type="search" value={query} onChange={event => { setQuery(event.target.value); setPage(1); }}
-            onKeyDown={event => { if (event.key === "Enter") event.preventDefault(); }}
-            maxLength={100} placeholder="예: 전자상거래, 479, 4791, 47912" />
-        </label>
+        {!compact && searchField}
       </div>
-      <div className="rounded-xl border border-stone-200 p-3 sm:p-4">
+      {showResults && <div className="rounded-xl border border-stone-200 p-3 sm:p-4">
         <p role="status" className="mb-3 text-sm text-stone-700">검색 결과 {results.length}개 · 선택 {selected.length}/{maximumIndustrySelections}개</p>
         {displayed.length ? (
           <ul className="grid gap-2 sm:grid-cols-2" aria-label="사업목적 검색 결과">
@@ -67,7 +76,7 @@ export function PurposePicker({ selected, onChange }: { selected: string[]; onCh
           <span aria-live="polite">{page} / {pageCount} 페이지</span>
           <button type="button" disabled={page === pageCount} onClick={() => setPage(page + 1)} className="min-h-11 px-2 font-semibold text-emerald-900 disabled:text-stone-500">다음</button>
         </div>}
-      </div>
+      </div>}
       {selected.length > 0 && (
         <div className="rounded-xl bg-emerald-50 p-4">
           <h3 className="text-sm font-bold text-emerald-950">선택한 사업목적</h3>

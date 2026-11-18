@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import {
   choices, companyFields, companyTypePositions, companyTypes, defaultBankCertificateHolder, emptyPerson, formatCompanyName, initialSurvey,
-  roles, surveyText, UNKNOWN, validateSurvey, type Person, type Survey,
+  roles, SurveySectionError, surveyReviewSections, surveyText, UNKNOWN, validateContact, validateSurvey, validateSurveyDetails,
+  type Person, type Survey, type SurveyDetails, type SurveySectionId,
 } from "../lib/incorporation";
 import { PurposePicker } from "./incorporation-purpose-picker";
 
@@ -13,6 +15,30 @@ const sections = [
   ["contact-details", "담당자"], ["company-details", "회사 정보"], ["business-purposes", "사업목적"],
   ["officers", "임원"], ["shareholders", "주주·사원"], ["certificate", "전자증명서"], ["notes", "기타"],
 ] as const;
+const mobileSteps: { title: string; sections: readonly SurveySectionId[] }[] = [
+  { title: "담당자 연락처", sections: ["contact-details"] },
+  { title: "회사 정보와 사업목적", sections: ["company-details", "business-purposes"] },
+  { title: "임원과 주주·사원", sections: ["officers", "shareholders"] },
+  { title: "발급 희망사항과 기타 요청", sections: ["certificate", "notes"] },
+];
+const reviewStep = mobileSteps.length;
+const mobileBreakpoint = "(width < 40rem)";
+const primaryButtonClass = "min-h-12 bg-emerald-900 py-3 font-semibold text-white hover:bg-emerald-950 disabled:opacity-60";
+const mobileBackButtonClass = "min-h-12 shrink-0 rounded-lg border border-stone-300 px-3 text-sm font-semibold text-emerald-900 hover:bg-emerald-50";
+
+function subscribeToMobileViewport(onChange: () => void) {
+  const query = window.matchMedia(mobileBreakpoint);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function mobileViewport() {
+  return window.matchMedia(mobileBreakpoint).matches;
+}
+
+function desktopSnapshot() {
+  return false;
+}
 
 function Field({ label, value, onChange, placeholder, required, type = "text", maxLength = 300 }: {
   label: string; value: string; onChange: (value: string) => void; placeholder?: string;
@@ -40,10 +66,12 @@ function Select({ label, value, onChange, options }: {
   );
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+function Section({ id, title, mobileVisible = true, children }: {
+  id: SurveySectionId | "consent"; title: string; mobileVisible?: boolean; children: ReactNode;
+}) {
   return (
-    <section id={id} className="scroll-mt-44 space-y-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
-      <h2 className="text-xl font-bold text-stone-950">{title}</h2>
+    <section id={id} className={`scroll-mt-44 space-y-5 rounded-2xl border border-stone-200 bg-white p-5 sm:p-7 ${mobileVisible ? "" : "hidden sm:block"}`}>
+      <h2 tabIndex={-1} className="scroll-mt-44 text-xl font-bold text-stone-950">{title}</h2>
       {children}
     </section>
   );
@@ -123,7 +151,7 @@ function People({ entries, shareholder = false, onChange }: {
   );
 }
 
-function PreparationChecklist({ survey }: { survey: Survey }) {
+function PreparationChecklist({ survey }: { survey: SurveyDetails }) {
   const named = (person: Person) => person.name && person.name !== UNKNOWN;
   const officers = survey.officers.filter(named);
   const shareholders = survey.shareholders.filter(named);
@@ -159,19 +187,27 @@ function PreparationChecklist({ survey }: { survey: Survey }) {
 }
 
 export default function IncorporationForm() {
+  const isMobile = useSyncExternalStore(subscribeToMobileViewport, mobileViewport, desktopSnapshot);
   const [survey, setSurvey] = useState(initialSurvey);
   const [officers, setOfficers] = useState<PersonRow[]>(() => [{ ...emptyPerson(), id: 0 }]);
   const [shareholders, setShareholders] = useState<PersonRow[]>(() => [{ ...emptyPerson("주주"), id: 0 }]);
-  const [review, setReview] = useState<Survey | null>(null);
+  const [review, setReview] = useState<SurveyDetails | null>(null);
+  const [step, setStep] = useState(0);
+  const [editingSection, setEditingSection] = useState<SurveySectionId | null>(null);
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState("");
   const [error, setError] = useState("");
   const [website, setWebsite] = useState("");
   const requestId = useRef<string | null>(null);
   const reviewHeading = useRef<HTMLHeadingElement>(null);
+  const mobileReviewHeading = useRef<HTMLHeadingElement>(null);
+  const progressHeading = useRef<HTMLHeadingElement>(null);
+  const mobileError = useRef<HTMLParagraphElement>(null);
   const reviewButton = useRef<HTMLButtonElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { if (review) reviewHeading.current?.focus(); }, [review]);
+  useEffect(() => {
+    if (review) (mobileViewport() ? mobileReviewHeading : reviewHeading).current?.focus();
+  }, [review]);
   useEffect(() => { if (receipt) receiptHeading.current?.focus(); }, [receipt]);
 
   function update<Key extends keyof Survey>(key: Key, value: Survey[Key]) {
@@ -187,11 +223,51 @@ export default function IncorporationForm() {
     setError("");
   }
 
+  function showMobileSection(section: SurveySectionId) {
+    setReview(null);
+    setStep(mobileSteps.findIndex(item => item.sections.includes(section)));
+    setEditingSection(section);
+    requestAnimationFrame(() => document.getElementById(section)?.querySelector("h2")?.focus());
+  }
+
+  function moveStep(next: number) {
+    setStep(next);
+    setError("");
+    requestAnimationFrame(() => progressHeading.current?.focus());
+  }
+
+  function showMobileError(message: string) {
+    setError(message);
+    requestAnimationFrame(() => mobileError.current?.focus());
+  }
+
+  function advanceMobile() {
+    setError("");
+    try {
+      if (!editingSection && step < reviewStep - 1) {
+        if (step === 0) validateContact(survey);
+        moveStep(step + 1);
+        return;
+      }
+      const validated = validateSurveyDetails({ ...survey, officers, shareholders });
+      requestId.current = crypto.randomUUID();
+      setEditingSection(null);
+      setReview(validated);
+    } catch (failure) {
+      if (failure instanceof SurveySectionError) showMobileSection(failure.section);
+      showMobileError(failure instanceof Error ? failure.message : "입력 내용을 확인해 주세요.");
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || receipt) return;
     setError("");
     if (!review) {
+      if (isMobile) {
+        advanceMobile();
+        return;
+      }
       try {
         const validated = validateSurvey({ ...survey, officers, shareholders });
         requestId.current = crypto.randomUUID();
@@ -201,11 +277,18 @@ export default function IncorporationForm() {
       }
       return;
     }
+    if (!survey.agree || !survey.authority) {
+      const message = "개인정보 동의와 정보 제공 권한 확인이 필요합니다.";
+      if (isMobile) showMobileError(message);
+      else setError(message);
+      return;
+    }
     setBusy(true);
     try {
       const response = await fetch("/api/incorporation", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ survey: review, website, requestId: requestId.current }), signal: AbortSignal.timeout(30000),
+        body: JSON.stringify({ survey: { ...review, agree: survey.agree, authority: survey.authority }, website, requestId: requestId.current }),
+        signal: AbortSignal.timeout(30000),
       });
       const result = await response.json();
       if (!response.ok || !result.receipt) {
@@ -227,7 +310,7 @@ export default function IncorporationForm() {
         <p className="mt-3">접수번호 <strong>{receipt}</strong></p>
         <p className="mt-2 text-stone-600">사무소에서 내용을 확인한 뒤 담당자에게 연락드립니다.</p>
         {review && <PreparationChecklist survey={review} />}
-        <a href="/" className={buttonClass + " mt-5"}>홈으로 돌아가기</a>
+        <Link href="/" className={buttonClass + " mt-5"}>홈으로 돌아가기</Link>
       </section>
     );
   }
@@ -235,24 +318,48 @@ export default function IncorporationForm() {
   const companyName = formatCompanyName(survey.company.companyName, survey.companyType, survey.companyTypePosition);
   const alternateName = formatCompanyName(survey.company.alternateName, survey.companyType, survey.companyTypePosition);
   const shareFieldsApply = survey.companyType === UNKNOWN || survey.companyType === "주식회사";
+  const visibleOnMobile = (section: SurveySectionId) => editingSection
+    ? editingSection === section
+    : mobileSteps[step].sections.includes(section);
+  const currentStep = review ? reviewStep : step;
+  const stepCount = reviewStep + 1;
+  const stepTitle = review ? "작성 내용 확인" : mobileSteps[step].title;
+  const errorMessage = error && (
+    <p role="alert" ref={mobileError} tabIndex={isMobile ? -1 : undefined} className="scroll-mt-44 rounded-xl bg-red-50 p-4 text-sm text-red-900">{error}</p>
+  );
+  const consent = (
+    <Section id="consent" title="개인정보 수집 및 이용" mobileVisible={!!review}>
+      <p className="text-sm leading-6 text-stone-700">담당자 연락처와 입력하신 회사·사업목적, 잔고증명서 발급인 성명, 임원·주주 정보, 미성년 여부와 법정대리인 성명, 전자증명서 관련 정보를 법인설립 상담과 서류 준비를 위해 사무소 이메일로 전달합니다. 상담·업무 목적이 달성될 때까지 보유하며, 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으며, 거부 시 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a></p>
+      <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.agree} onChange={event => update("agree", event.target.checked)} disabled={busy} required={!isMobile} />개인정보 수집 및 이용에 동의합니다. (필수)</label>
+      <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.authority} onChange={event => update("authority", event.target.checked)} disabled={busy} required={!isMobile} />다른 사람의 정보를 입력한 경우 제공 권한과 동의를 확인했습니다. (필수)</label>
+    </Section>
+  );
 
   return (
-    <form onSubmit={submit} autoComplete="off" className="space-y-5">
+    <form onSubmit={submit} noValidate={isMobile} autoComplete="off" className="space-y-5">
+      <div className="space-y-2 sm:hidden">
+        <h2 ref={progressHeading} tabIndex={-1} className="scroll-mt-36 text-sm font-semibold text-emerald-900">
+          {currentStep + 1}/{stepCount}단계 <span className="ml-2">{stepTitle}</span>
+        </h2>
+        <progress aria-label="조사서 작성 단계" max={stepCount} value={currentStep + 1}
+          className="block h-2 w-full appearance-none overflow-hidden rounded-full bg-emerald-100 [&::-moz-progress-bar]:bg-emerald-900 [&::-webkit-progress-bar]:bg-emerald-100 [&::-webkit-progress-value]:bg-emerald-900" />
+      </div>
+      {isMobile && !review && errorMessage}
       <div hidden={!!review} className="space-y-5">
-        <nav aria-label="조사서 항목 이동" className="flex flex-wrap gap-2">
+        <nav aria-label="조사서 항목 이동" className="hidden flex-wrap gap-2 sm:flex">
           {sections.map(([id, label]) => <a key={id} href={"#" + id} className={buttonClass}>{label}</a>)}
         </nav>
-        <p className="rounded-xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
+        <p className={`rounded-xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-950 ${visibleOnMobile("contact-details") ? "" : "hidden sm:block"}`}>
           담당자 연락처는 필수입니다. 정해지지 않은 항목은 비워두거나 목록에서 ‘미정’을 선택하세요. 주민등록번호, 생년월일, 개인 주소, 계좌번호와 비밀번호는 입력하지 마세요.
         </p>
-        <Section id="contact-details" title="담당자 연락처">
+        <Section id="contact-details" title="담당자 연락처" mobileVisible={visibleOnMobile("contact-details")}>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field required label="성함" value={survey.contactName} onChange={value => update("contactName", value)} maxLength={60} />
             <Field required label="이메일" type="email" value={survey.email} onChange={value => update("email", value)} maxLength={254} />
             <Field required label="전화번호" type="tel" value={survey.phone} onChange={value => update("phone", value)} maxLength={30} />
           </div>
         </Section>
-        <Section id="company-details" title="회사 정보">
+        <Section id="company-details" title="회사 정보" mobileVisible={visibleOnMobile("company-details")}>
           <Caution>동일한 관할 내 같은 상호가 있는 경우 상호를 변경해야 할 가능성도 있습니다.</Caution>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="회사 종류" value={survey.companyType} onChange={value => update("companyType", value)} options={companyTypes} />
@@ -278,9 +385,9 @@ export default function IncorporationForm() {
             ))}
           </div>
         </Section>
-        <Section id="business-purposes" title="사업목적">
+        <Section id="business-purposes" title="사업목적" mobileVisible={visibleOnMobile("business-purposes")}>
           <Caution>사업목적 중에는 최소 자본금 제한 등 인허가 요건이 필요한 경우가 있습니다.</Caution>
-          <PurposePicker selected={survey.industryCodes} onChange={value => update("industryCodes", value)} />
+          <PurposePicker selected={survey.industryCodes} onChange={value => update("industryCodes", value)} compact={isMobile} />
           <label className="grid gap-2 text-sm font-semibold text-stone-700">
             직접 작성할 목적 (선택)
             <textarea className={inputClass} rows={3} maxLength={4000} value={survey.purposes} onChange={event => update("purposes", event.target.value)}
@@ -288,52 +395,89 @@ export default function IncorporationForm() {
           </label>
           <p className="text-sm leading-6 text-stone-600">선택하거나 직접 적은 항목은 사무소에서 등기 문구로 검토합니다.</p>
         </Section>
-        <Section id="officers" title="임원">
+        <Section id="officers" title="임원" mobileVisible={visibleOnMobile("officers")}>
           {shareFieldsApply && <Caution>주식회사 발기설립 안내 · 주주가 아닌 임원이 1인 이상 필요합니다.</Caution>}
           <People entries={officers} onChange={setOfficers} />
         </Section>
-        <Section id="shareholders" title="주주·사원">
+        <Section id="shareholders" title="주주·사원" mobileVisible={visibleOnMobile("shareholders")}>
           <p className="text-sm text-stone-600">지분율을 모두 확정했다면 합계가 100%가 되도록 적어주세요.</p>
           <People entries={shareholders} shareholder onChange={setShareholders} />
         </Section>
-        <Section id="certificate" title="전자증명서 발급 희망사항">
+        <Section id="certificate" title="전자증명서 발급 희망사항" mobileVisible={visibleOnMobile("certificate")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Select label="전자증명서" value={survey.certificate} onChange={value => update("certificate", value)} options={choices} />
             <Select label="기기형 OTP" value={survey.otp} onChange={value => update("otp", value)} options={choices} />
             <Field label="대표자 이메일 (선택)" type="email" value={survey.representativeEmail} onChange={value => update("representativeEmail", value)} maxLength={254} />
           </div>
         </Section>
-        <Section id="notes" title="기타 요청사항">
+        <Section id="notes" title="기타 요청사항" mobileVisible={visibleOnMobile("notes")}>
           <label className="grid gap-2 text-sm font-semibold text-stone-700">
             사무소에 전달할 내용 (선택)
             <textarea className={inputClass} rows={4} maxLength={3000} value={survey.notes} onChange={event => update("notes", event.target.value)}
               placeholder="예: 희망 설립 일정, 사무소에 확인하고 싶은 점" />
           </label>
         </Section>
-        <Section id="consent" title="개인정보 수집 및 이용">
-          <p className="text-sm leading-6 text-stone-700">담당자 연락처와 입력하신 회사·사업목적, 잔고증명서 발급인 성명, 임원·주주 정보, 미성년 여부와 법정대리인 성명, 전자증명서 관련 정보를 법인설립 상담과 서류 준비를 위해 사무소 이메일로 전달합니다. 상담·업무 목적이 달성될 때까지 보유하며, 법령상 보존 의무가 있는 자료는 해당 기간 동안 보관합니다. 동의를 거부할 수 있으며, 거부 시 온라인 접수가 제한됩니다. <a className="font-semibold text-emerald-900 underline" href="/privacy" target="_blank" rel="noreferrer">개인정보 처리방침 (새 창)</a></p>
-          <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.agree} onChange={event => update("agree", event.target.checked)} required />개인정보 수집 및 이용에 동의합니다. (필수)</label>
-          <label className="flex items-start gap-2 text-sm"><input className="mt-0.5 size-4" type="checkbox" checked={survey.authority} onChange={event => update("authority", event.target.checked)} required />다른 사람의 정보를 입력한 경우 제공 권한과 동의를 확인했습니다. (필수)</label>
-        </Section>
+        {!review && consent}
       </div>
       {review && (
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
-          <h2 ref={reviewHeading} tabIndex={-1} className="scroll-mt-44 text-xl font-bold">전송 전 내용 확인</h2>
-          <pre className="my-5 whitespace-pre-wrap [overflow-wrap:anywhere] font-sans text-sm leading-6 text-stone-700">{surveyText(review)}</pre>
-          <button type="button" disabled={busy} className={buttonClass} onClick={() => {
-            setReview(null);
-            setError("");
-            requestAnimationFrame(() => reviewButton.current?.focus());
-          }}>입력 내용 수정</button>
-        </section>
+        <>
+          <section className="hidden rounded-2xl border border-stone-200 bg-white p-5 sm:block sm:p-7">
+            <h2 ref={reviewHeading} tabIndex={-1} className="scroll-mt-44 text-xl font-bold">전송 전 내용 확인</h2>
+            <pre className="my-5 whitespace-pre-wrap [overflow-wrap:anywhere] font-sans text-sm leading-6 text-stone-700">{surveyText(review)}</pre>
+            <button type="button" disabled={busy} className={buttonClass} onClick={() => {
+              setReview(null);
+              setError("");
+              requestAnimationFrame(() => reviewButton.current?.focus());
+            }}>입력 내용 수정</button>
+          </section>
+          <section className="space-y-3 sm:hidden">
+            <h2 ref={mobileReviewHeading} tabIndex={-1} className="scroll-mt-36 text-xl font-bold text-stone-950">전송 전 내용 확인</h2>
+            <p className="text-sm leading-6 text-stone-600">제출할 내용을 확인해 주세요. 항목별로 수정할 수 있습니다.</p>
+            {surveyReviewSections(review).map(section => {
+              const isCompany = section.id === "company-details";
+              const title = section.id === "contact-details" ? "담당자 연락처" : isCompany ? "회사 정보" : section.title;
+              const details = <p className="whitespace-pre-wrap text-sm leading-6 text-stone-700 [overflow-wrap:anywhere]">{section.text}</p>;
+              return (
+                <div key={section.id} className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-bold text-stone-950">{title}</h3>
+                    <button type="button" disabled={busy} aria-label={title + " 수정"}
+                      className="min-h-11 shrink-0 px-2 text-sm font-bold text-emerald-900 underline underline-offset-4 disabled:opacity-50"
+                      onClick={() => { setError(""); showMobileSection(section.id); }}>수정</button>
+                  </div>
+                  {isCompany ? (
+                    <details>
+                      <summary className="min-h-11 cursor-pointer text-sm leading-6 text-stone-700 [overflow-wrap:anywhere]">
+                        {formatCompanyName(review.company.companyName, review.companyType, review.companyTypePosition)} · 회사 정보 전체 보기
+                      </summary>
+                      {details}
+                    </details>
+                  ) : details}
+                </div>
+              );
+            })}
+          </section>
+          {(isMobile || !survey.agree || !survey.authority) && consent}
+        </>
       )}
       <div aria-hidden="true" className="absolute left-[-10000px] size-px overflow-hidden">
         <label>Website<input name="website" tabIndex={-1} value={website} onChange={event => setWebsite(event.target.value)} autoComplete="off" /></label>
       </div>
-      {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-900">{error}</p>}
-      <button ref={reviewButton} type="submit" disabled={busy} className="min-h-12 w-full rounded-full bg-emerald-900 px-5 py-3 font-semibold text-white hover:bg-emerald-950 disabled:opacity-60">
+      {(!isMobile || review) && errorMessage}
+      <button ref={reviewButton} type="submit" disabled={busy} className={primaryButtonClass + " hidden w-full rounded-full px-5 sm:block"}>
         {busy ? "접수 중…" : review ? "사무소에 전송" : "작성 내용 확인"}
       </button>
+      <div className="sticky bottom-0 z-10 -mx-4 flex gap-2 border-t border-stone-200 bg-white px-4 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:hidden">
+        {!review && !editingSection && step > 0 && (
+          <>
+            <button type="button" className={mobileBackButtonClass} onClick={() => moveStep(step - 1)}>이전</button>
+            <button type="button" className={mobileBackButtonClass} onClick={advanceMobile}>미정으로 다음</button>
+          </>
+        )}
+        <button type="submit" disabled={busy} className={primaryButtonClass + " min-w-0 flex-1 rounded-lg px-2 text-sm"}>
+          {busy ? "접수 중…" : review ? "사무소에 전송" : editingSection ? "수정하고 확인" : step === reviewStep - 1 ? "작성 내용 확인" : "다음"}
+        </button>
+      </div>
     </form>
   );
 }
